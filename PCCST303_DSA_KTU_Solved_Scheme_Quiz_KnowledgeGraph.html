@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCCST303 - Data Structures &amp; Algorithms | KTU Solved Scheme + Quiz + Knowledge Graph</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#ffffff; --ink:#1e293b; --muted:#64748b;
+    --blue:#2563eb; --blue-soft:#dbeafe; --green:#059669; --green-soft:#d1fae5;
+    --amber:#d97706; --amber-soft:#fef3c7; --violet:#7c3aed; --violet-soft:#ede9fe;
+    --rose:#e11d48; --rose-soft:#ffe4e6; --line:#e2e8f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Segoe UI",Roboto,Arial,sans-serif;background:#f1f5f9;color:var(--ink);line-height:1.6}
+  header{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;padding:34px 20px 26px;text-align:center}
+  header h1{font-size:1.6rem;letter-spacing:.5px}
+  header p{color:#bfdbfe;margin-top:6px;font-size:.95rem}
+  .badge{display:inline-block;background:#f59e0b;color:#1e293b;font-weight:700;border-radius:999px;padding:3px 14px;font-size:.8rem;margin:4px 4px 0}
+  nav{position:sticky;top:0;z-index:50;background:#0f172a;display:flex;flex-wrap:wrap;justify-content:center;gap:2px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  nav a{color:#cbd5e1;text-decoration:none;padding:7px 14px;border-radius:8px;font-size:.86rem;font-weight:600}
+  nav a:hover{background:#2563eb;color:#fff}
+  main{max-width:1050px;margin:0 auto;padding:24px 16px 60px}
+  section{margin-top:44px}
+  h2.sec{font-size:1.35rem;color:#0f172a;border-left:6px solid var(--blue);padding-left:12px;margin-bottom:6px}
+  .sec-sub{color:var(--muted);font-size:.9rem;margin-bottom:18px;padding-left:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .qhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+  .qno{background:var(--blue);color:#fff;font-weight:700;border-radius:8px;padding:3px 12px;font-size:.9rem}
+  .qno.b{background:var(--violet)}
+  .qtitle{font-weight:700;font-size:1.02rem}
+  .chip{display:inline-block;border-radius:999px;padding:2px 12px;font-size:.74rem;font-weight:700}
+  .c-blue{background:var(--blue-soft);color:#1d4ed8}.c-green{background:var(--green-soft);color:#047857}
+  .c-amber{background:var(--amber-soft);color:#b45309}.c-violet{background:var(--violet-soft);color:#6d28d9}
+  .c-rose{background:var(--rose-soft);color:#be123c}
+  .scheme{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:8px 14px;font-size:.82rem;color:var(--muted);margin:6px 0 12px}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:.83rem;line-height:1.5;margin:10px 0}
+  code.inline{background:#eef2ff;color:#3730a3;padding:1px 6px;border-radius:6px;font-size:.85em}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:.87rem}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left}
+  th{background:#eef2ff;color:#1e2a4a}
+  tr:nth-child(even) td{background:#f8fafc}
+  .tree{text-align:center;color:#e2e8f0}
+  .note{background:var(--amber-soft);border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;font-size:.85rem;margin:12px 0;color:#78350f}
+  .ok{background:var(--green-soft);border:1px solid #6ee7b7;border-radius:10px;padding:10px 14px;font-size:.88rem;color:#064e3b;margin:10px 0}
+  .mod-pill{display:inline-block;background:var(--violet);color:#fff;font-size:.72rem;font-weight:700;border-radius:6px;padding:2px 10px;margin-left:auto}
+  /* QUIZ */
+  .quiz-q{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  .quiz-q p{font-weight:600;margin-bottom:8px}
+  .opt{display:block;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:7px 12px;margin:6px 0;cursor:pointer;font-size:.9rem}
+  .opt:hover{border-color:var(--blue)}
+  .opt input{margin-right:8px}
+  .fb{font-size:.82rem;font-weight:700;margin-top:6px;display:none}
+  .btn{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:10px 26px;font-size:.95rem;font-weight:700;cursor:pointer}
+  .btn:hover{background:#1d4ed8}
+  #scoreBar{display:none;background:var(--green-soft);border:1px solid #6ee7b7;border-radius:12px;padding:14px 18px;margin:16px 0;font-weight:700;color:#065f46}
+  /* GRAPH */
+  #graphWrap{background:#0b1220;border-radius:16px;padding:10px;margin-top:10px}
+  #kg{width:100%;height:620px;display:block}
+  .gnode{cursor:pointer}
+  .gnode circle{transition:all .2s}
+  .gnode:hover circle{stroke:#fbbf24;stroke-width:3}
+  .gnode text{fill:#e2e8f0;font-size:11px;pointer-events:none}
+  #ginfo{background:#111c33;color:#cbd5e1;border-radius:10px;padding:12px 16px;font-size:.88rem;margin-top:10px;min-height:52px}
+  footer{background:#0f172a;color:#94a3b8;text-align:center;padding:22px;font-size:.82rem}
+  @media(max-width:640px){ header h1{font-size:1.15rem} #kg{height:520px} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>06PCCST303 &mdash; Data Structures and Algorithms</h1>
+  <p>KTU Solved Scheme &bull; Part A (3 marks) &bull; Part B (9 marks, 6+3) &bull; Max. Marks 60</p>
+  <span class="badge">Answer Key</span><span class="badge">Interactive Quiz</span><span class="badge">Knowledge Graph</span>
+</header>
+
+<nav>
+  <a href="#dist">Marks Distribution</a>
+  <a href="#parta">Part A (3 Marks)</a>
+  <a href="#partb">Part B (Full Answers)</a>
+  <a href="#quiz">Quiz</a>
+  <a href="#kgraph">Knowledge Graph</a>
+</nav>
+
+<main>
+
+<div class="note"><b>Note:</b> The source PDF is a marking <i>scheme</i> (question text is not printed). Where a question number had no visible text, the most probable KTU question has been reconstructed from the scheme's answer key and marked with <span class="chip c-rose">Reconstructed</span>.</div>
+
+<!-- ===================== MARKS DISTRIBUTION ===================== -->
+<section id="dist">
+  <h2 class="sec">Marks Distribution</h2>
+  <p class="sec-sub">As per the official scheme 06PCCST303112504</p>
+  <div class="card">
+    <table>
+      <tr><th>Part</th><th>Pattern</th><th>Marks</th><th>Total</th></tr>
+      <tr><td><b>Part A</b></td><td>Answer ALL questions (Q1&ndash;Q8), 3 marks each</td><td>8 &times; 3</td><td>24</td></tr>
+      <tr><td><b>Part B</b></td><td>One full question per module (Q9&ndash;Q16), (a)=6 + (b)=3 pattern</td><td>4 &times; 9</td><td>36</td></tr>
+      <tr><td colspan="3" style="text-align:right"><b>Grand Total</b></td><td><b>60</b></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== PART A ===================== -->
+<section id="parta">
+  <h2 class="sec">PART A &mdash; Short Answers (3 marks each)</h2>
+  <p class="sec-sub">Answer all questions &bull; Each carries 3 marks</p>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q1</span><span class="qtitle">Time complexity (growth of log-functions)</span><span class="chip c-blue">Complexity: 3 marks</span></div>
+    <div class="scheme">Scheme: Correct complexity &mdash; 3 marks</div>
+    <p><b>Answer.</b> For a halving search process such as binary search, the recurrence is <code class="inline">T(n) = T(n/2) + c</code>, which solves to <b>T(n) = O(log n)</b>.</p>
+    <p>Ordering the given functions by growth rate (slowest &rarr; fastest):</p>
+    <p style="text-align:center;font-size:1.05rem"><b>log n &nbsp;&lt;&nbsp; (log n)&sup2; = log&sup2;n</b></p>
+    <p>So between the choices <code class="inline">log n</code>, <code class="inline">(log n)&sup2;</code> and <code class="inline">log&sup2;n &minus; 3</code>, the dominant-but-smallest complexity for binary search is <b>O(log n)</b>, while <code class="inline">log&sup2;n</code> grows strictly faster than <code class="inline">log n</code>.</p>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q2</span><span class="qtitle">Stack &mdash; INSERT (PUSH) and DELETE (POP)</span><span class="chip c-blue">Insert: 1.5 + Delete: 1.5</span></div>
+    <div class="scheme">Scheme: Correct algorithm / pseudo / program code for Insert &mdash; 1.5 marks + Delete &mdash; 1.5 marks</div>
+    <pre>Algorithm PUSH(S, item)
+1.  if top = MAX &minus; 1  then  print "Stack Overflow";  return
+2.  top &larr; top + 1
+3.  S[top] &larr; item
+
+Algorithm POP(S)
+1.  if top = &minus;1  then  print "Stack Underflow";  return NULL
+2.  item &larr; S[top]
+3.  top &larr; top &minus; 1
+4.  return item</pre>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q3</span><span class="qtitle">Sparse Matrix &mdash; definition and example</span><span class="chip c-rose">Reconstructed</span><span class="chip c-blue">Definition: 2 + Example: 1</span></div>
+    <div class="scheme">Scheme: Definition &mdash; 2 marks + example &mdash; 1 mark</div>
+    <p><b>Definition.</b> A matrix in which most of the elements are zero is called a <b>sparse matrix</b>. Formally, a matrix with <code class="inline">m &times; n</code> elements is sparse when the number of non-zero elements is much smaller than <code class="inline">m&middot;n</code> (typically &gt; 50% zeros). It is stored compactly as a triplet list <code class="inline">(row, column, value)</code> to save memory.</p>
+    <p><b>Example (3 &times; 3 sparse matrix):</b></p>
+    <pre>A = | 0  0  5 |
+    | 0  0  0 |
+    | 3  0  0 |
+
+Triplet form:  (0,2,5)  (2,0,3)      &rarr; only 2 non-zero entries out of 9.</pre>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q4</span><span class="qtitle">Binary Search algorithm</span><span class="chip c-rose">Reconstructed</span><span class="chip c-blue">Algorithm: 3 marks</span></div>
+    <div class="scheme">Scheme: Correct algorithm / pseudo / program code &mdash; 3 marks</div>
+    <pre>Algorithm BinarySearch(A[0..n&minus;1], key)
+1.  low &larr; 0;  high &larr; n &minus; 1
+2.  while low &le; high do
+3.      mid &larr; &lfloor;(low + high) / 2&rfloor;
+4.      if A[mid] = key        then return mid          // found
+5.      else if key &lt; A[mid]  then high &larr; mid &minus; 1
+6.      else                      low  &larr; mid + 1
+7.  return &minus;1                                                // not found
+// Works only on a SORTED array.  Time: O(log n)   Space: O(1)</pre>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q5</span><span class="qtitle">Construct a Binary Search Tree</span><span class="chip c-rose">Reconstructed</span><span class="chip c-blue">Correct tree: 3 marks</span></div>
+    <div class="scheme">Scheme: Correct tree &mdash; 3 marks</div>
+    <p><b>Question (reconstructed):</b> Construct the BST for the insertion sequence <code class="inline">50, 30, 70, 20, 40, 60, 80</code>.</p>
+    <p>Rule: smaller values go left, larger values go right.</p>
+    <pre class="tree">                 50
+               /    \
+             30      70
+            /  \    /  \
+          20   40  60   80</pre>
+    <div class="ok">This tree gives Inorder: 20 30 40 50 60 70 80 (sorted &mdash; a valid BST).</div>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q6</span><span class="qtitle">Graph representation methods</span><span class="chip c-blue">Any two: 1.5 + 1.5</span></div>
+    <div class="scheme">Scheme: Any two methods with example &mdash; 1.5 marks each. Acceptable: Adjacency matrix, adjacency list, set</div>
+    <p><b>1. Adjacency Matrix</b> &mdash; a <code class="inline">V &times; V</code> array where <code class="inline">A[i][j] = 1</code> (or weight) if edge (i, j) exists, else 0. Space = O(V&sup2;).</p>
+    <p><b>2. Adjacency List</b> &mdash; an array of linked lists; list <code class="inline">i</code> stores all vertices adjacent to vertex <code class="inline">i</code>. Space = O(V + E).</p>
+    <pre>Graph:  0—1, 0—2, 1—3
+
+Adjacency Matrix          Adjacency List
+   0 1 2 3                0 → 1 → 2
+0  0 1 1 0                1 → 0 → 3
+1  1 0 0 1                2 → 0
+2  1 0 0 0                3 → 1
+3  0 1 0 0</pre>
+    <p><b>Matrix</b> = fast edge lookup O(1), but wastes space on sparse graphs. <b>List</b> = memory-efficient and ideal for traversals (BFS/DFS).</p>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q7</span><span class="qtitle">Tower of Hanoi (recursive algorithm)</span><span class="chip c-rose">Reconstructed</span><span class="chip c-blue">Algorithm: 3 marks</span></div>
+    <div class="scheme">Scheme: Correct algorithm / pseudo / program code &mdash; 3 marks</div>
+    <pre>Algorithm TOH(n, src, aux, dst)
+1.  if n = 1  then
+2.      move disk 1 from src → dst;  return
+3.  TOH(n&minus;1, src, dst, aux)      // move n&minus;1 disks src → aux
+4.  move disk n from src → dst   // move largest disk
+5.  TOH(n&minus;1, aux, src, dst)      // move n&minus;1 disks aux → dst
+
+// Moves = 2&sup1; &minus; 1  &rArr;  T(n) = 2T(n&minus;1)+1 = O(2&sup1;)  (exponential)</pre>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno">Q8</span><span class="qtitle">Priority Queue (concept)</span><span class="chip c-rose">Reconstructed</span><span class="chip c-blue">3 marks</span></div>
+    <div class="scheme">Scheme: Q8 text not legible in source PDF &mdash; high-probability KTU question answered</div>
+    <p><b>Answer.</b> A <b>priority queue</b> is a queue in which each element has a priority; the element with the <b>highest (or lowest) priority</b> is deleted first, regardless of arrival order.</p>
+    <ul style="margin:8px 0 8px 22px">
+      <li><b>Insert</b> &mdash; adds element with its priority (O(1) at rear, or O(log n) in a heap).</li>
+      <li><b>Delete</b> &mdash; removes the max-priority element (O(n) by scanning, or O(log n) in a heap).</li>
+    </ul>
+    <p><b>Applications:</b> CPU scheduling, Dijkstra's algorithm, Huffman coding, printer queues. <b>Implementation:</b> heap (best) or sorted/unsorted array.</p>
+  </div>
+</section>
+
+<!-- ===================== PART B ===================== -->
+<section id="partb">
+  <h2 class="sec">PART B &mdash; Full Question Answers (9 marks each)</h2>
+  <p class="sec-sub">Answer one full question from each module &bull; Each question = 9 marks (6 + 3)</p>
+
+  <!-- MODULE 1 -->
+  <div class="card" style="border-top:5px solid var(--blue)">
+    <div class="qhead"><span class="qno b">Q9</span><span class="qtitle">Asymptotic Notations</span><span class="mod-pill">Module 1</span></div>
+    <div class="scheme">Scheme: (a) Big O with explanation + graph &mdash; 2 &bull; Big &Omega; with graph &mdash; 2 &bull; Big &Theta; with graph &mdash; 1</div>
+
+    <p><b>(a) Big-O (Upper Bound) &mdash; O(g(n))</b></p>
+    <p>f(n) = O(g(n)) if there exist constants <code class="inline">c &gt; 0</code> and <code class="inline">n&#8320; &ge; 1</code> such that <code class="inline">f(n) &le; c&middot;g(n)</code> for all <code class="inline">n &ge; n&#8320;</code>. g(n) is an <b>asymptotic upper bound</b>: f never grows faster than g. Example: <code class="inline">3n + 2 = O(n)</code> (take c = 4, n&#8320; = 2).</p>
+    <p><b>Big-&Omega; (Lower Bound) &mdash; &Omega;(g(n))</b></p>
+    <p>f(n) = &Omega;(g(n)) if there exist constants <code class="inline">c &gt; 0</code>, <code class="inline">n&#8320;</code> such that <code class="inline">f(n) &ge; c&middot;g(n)</code> for all <code class="inline">n &ge; n&#8320;</code>. g(n) is an <b>asymptotic lower bound</b>. Example: <code class="inline">3n + 2 = &Omega;(n)</code> (take c = 3).</p>
+    <p><b>Big-&Theta; (Tight Bound) &mdash; &Theta;(g(n))</b></p>
+    <p>f(n) = &Theta;(g(n)) iff f(n) = O(g(n)) <b>and</b> f(n) = &Omega;(g(n)). g(n) is both an upper <i>and</i> lower bound &mdash; f grows at exactly the same rate. Example: <code class="inline">3n + 2 = &Theta;(n)</code>.</p>
+
+    <svg viewBox="0 0 720 220" style="width:100%;max-width:760px;background:#fff;border:1px solid var(--line);border-radius:10px">
+      <style>text{font:11px Arial}</style>
+      <!-- O -->
+      <g transform="translate(10,10)">
+        <rect x="0" y="0" width="220" height="200" fill="#eff6ff" stroke="#93c5fd"/>
+        <text x="8" y="16" font-weight="bold" fill="#1d4ed8">Big-O: f(n) ≤ c·g(n)</text>
+        <line x1="30" y1="170" x2="200" y2="170" stroke="#334155"/><line x1="30" y1="170" x2="30" y2="30" stroke="#334155"/>
+        <path d="M30,165 C70,160 120,150 190,70" stroke="#dc2626" fill="none" stroke-width="2"/>
+        <path d="M30,165 C90,160 140,140 195,90" stroke="#2563eb" fill="none" stroke-width="2" stroke-dasharray="5 4"/>
+        <line x1="150" y1="30" x2="150" y2="170" stroke="#059669" stroke-dasharray="3 3"/>
+        <text x="152" y="186" fill="#059669">n₀</text>
+        <text x="140" y="60" fill="#dc2626">c·g(n)</text><text x="90" y="120" fill="#2563eb">f(n)</text>
+      </g>
+      <!-- Omega -->
+      <g transform="translate(250,10)">
+        <rect x="0" y="0" width="220" height="200" fill="#f0fdf4" stroke="#86efac"/>
+        <text x="8" y="16" font-weight="bold" fill="#047857">Big-Ω: f(n) ≥ c·g(n)</text>
+        <line x1="30" y1="170" x2="200" y2="170" stroke="#334155"/><line x1="30" y1="170" x2="30" y2="30" stroke="#334155"/>
+        <path d="M30,165 C70,130 120,90 190,45" stroke="#dc2626" fill="none" stroke-width="2"/>
+        <path d="M30,165 C90,155 140,140 195,120" stroke="#2563eb" fill="none" stroke-width="2" stroke-dasharray="5 4"/>
+        <line x1="150" y1="30" x2="150" y2="170" stroke="#059669" stroke-dasharray="3 3"/>
+        <text x="152" y="186" fill="#059669">n₀</text>
+        <text x="160" y="45" fill="#dc2626">f(n)</text><text x="150" y="140" fill="#2563eb">c·g(n)</text>
+      </g>
+      <!-- Theta -->
+      <g transform="translate(490,10)">
+        <rect x="0" y="0" width="220" height="200" fill="#faf5ff" stroke="#d8b4fe"/>
+        <text x="8" y="16" font-weight="bold" fill="#6d28d9">Big-Θ: c₁·g ≤ f ≤ c₂·g</text>
+        <line x1="30" y1="170" x2="200" y2="170" stroke="#334155"/><line x1="30" y1="170" x2="30" y2="30" stroke="#334155"/>
+        <path d="M30,165 C70,158 120,145 190,95" stroke="#dc2626" fill="none" stroke-width="2"/>
+        <path d="M30,165 C90,162 150,150 195,115" stroke="#f59e0b" fill="none" stroke-width="2" stroke-dasharray="5 4"/>
+        <path d="M30,165 C90,155 150,138 195,80" stroke="#2563eb" fill="none" stroke-width="2" stroke-dasharray="2 4"/>
+        <line x1="140" y1="30" x2="140" y2="170" stroke="#059669" stroke-dasharray="3 3"/>
+        <text x="142" y="186" fill="#059669">n₀</text>
+        <text x="120" y="115" fill="#dc2626">f(n)</text><text x="150" y="138" fill="#2563eb">c₂·g(n)</text><text x="150" y="75" fill="#f59e0b">c₁·g(n)</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno b">Q10</span><span class="qtitle">Infix&rarr;Postfix conversion &amp; Bubble Sort complexity</span><span class="mod-pill">Module 1</span></div>
+    <div class="scheme">Scheme: (a) Correct algorithm &mdash; 3 + Infix conversion with OUTPUT: AB+CDE/*&minus;FG/+ &mdash; 3 &bull; (b) Best case O(n), Worst &amp; average O(n&sup2;) &mdash; 3</div>
+
+    <p><b>(a) Infix to Postfix conversion using a stack</b></p>
+    <pre>Algorithm InfixToPostfix(E)
+1.  for each token t in E (left → right) do
+2.      if t is an operand      then append t to output
+3.      else if t = '('         then PUSH '('
+4.      else if t = ')'         then POP and append until '(' ; POP '('
+5.      else  // operator
+6.          while stack ≠ empty AND top ≠ '('
+7.                AND precedence(top) ≥ precedence(t) do
+8.                POP and append to output
+9.          PUSH t
+10. while stack ≠ empty do POP and append to output
+// Precedence: * /  = 2   >   + −  = 1   (left-associative)</pre>
+    <p><b>Example:</b> Infix: <code class="inline">A + B &minus; C * (D / E) + F / G</code></p>
+    <table>
+      <tr><th>Token</th><th>Stack (bottom&rarr;top)</th><th>Output</th></tr>
+      <tr><td>A</td><td>&mdash;</td><td>A</td></tr>
+      <tr><td>+</td><td>+</td><td>A</td></tr>
+      <tr><td>B</td><td>+</td><td>AB</td></tr>
+      <tr><td>&minus;</td><td>&minus;</td><td>AB+</td></tr>
+      <tr><td>C</td><td>&minus;</td><td>AB+C</td></tr>
+      <tr><td>*</td><td>&minus; *</td><td>AB+C</td></tr>
+      <tr><td>(</td><td>&minus; * (</td><td>AB+C</td></tr>
+      <tr><td>D</td><td>&minus; * (</td><td>AB+CD</td></tr>
+      <tr><td>/</td><td>&minus; * ( /</td><td>AB+CD</td></tr>
+      <tr><td>E</td><td>&minus; * ( /</td><td>AB+CDE</td></tr>
+      <tr><td>)</td><td>&minus; *</td><td>AB+CDE/</td></tr>
+      <tr><td>+</td><td>+</td><td>AB+CDE/*&minus;</td></tr>
+      <tr><td>F</td><td>+</td><td>AB+CDE/*&minus;F</td></tr>
+      <tr><td>/</td><td>+ /</td><td>AB+CDE/*&minus;F</td></tr>
+      <tr><td>G</td><td>+ /</td><td>AB+CDE/*&minus;FG</td></tr>
+      <tr><td>End</td><td>&mdash;</td><td><b>AB+CDE/*&minus;FG/+</b></td></tr>
+    </table>
+    <div class="ok">Final postfix = <b>AB+CDE/*&minus;FG/+</b> &nbsp;(matches scheme key)</div>
+
+    <p><b>(b) Bubble Sort &mdash; complexity</b></p>
+    <pre>Algorithm BubbleSort(A, n)                      // optimized
+1.  for i ← 0 to n−2 do
+2.      swapped ← false
+3.      for j ← 0 to n−i−2 do
+4.          if A[j] > A[j+1] then
+5.              swap A[j], A[j+1];  swapped ← true
+6.      if swapped = false then break        // already sorted</pre>
+    <table>
+      <tr><th>Case</th><th>Comparisons</th><th>Complexity</th><th>Reason</th></tr>
+      <tr><td><b>Best</b> (already sorted)</td><td>n &minus; 1</td><td><b>O(n)</b></td><td>One pass, no swap &rarr; break</td></tr>
+      <tr><td><b>Worst</b> (reverse sorted)</td><td>n(n&minus;1)/2</td><td><b>O(n&sup2;)</b></td><td>Max swaps every pass</td></tr>
+      <tr><td><b>Average</b></td><td>&asymp; n(n&minus;1)/4</td><td><b>O(n&sup2;)</b></td><td>Random input &rarr; quadratic</td></tr>
+    </table>
+  </div>
+
+  <!-- MODULE 2 -->
+  <div class="card" style="border-top:5px solid var(--green)">
+    <div class="qhead"><span class="qno b">Q11</span><span class="qtitle">Queue operations &amp; Linked List insertion</span><span class="mod-pill">Module 2</span></div>
+    <div class="scheme">Scheme: (a) Queue insertion &mdash; 2.5 + deletion &mdash; 2.5 &bull; (b) Insert at beginning &mdash; 2 + insert at end &mdash; 2</div>
+
+    <p><b>(a) Circular Queue &mdash; ENQUEUE (INSERT) and DEQUEUE (DELETE)</b></p>
+    <pre>Algorithm ENQUEUE(Q, item)
+1.  if (rear + 1) mod MAX = front  then print "Queue Overflow"; return
+2.  if front = &minus;1  then front &larr; 0            // first element
+3.  rear &larr; (rear + 1) mod MAX
+4.  Q[rear] &larr; item
+
+Algorithm DEQUEUE(Q)
+1.  if front = &minus;1  then print "Queue Underflow"; return NULL
+2.  item &larr; Q[front]
+3.  if front = rear  then front &larr; &minus;1; rear &larr; &minus;1   // last element
+4.  else front &larr; (front + 1) mod MAX
+5.  return item</pre>
+    <p><b>(b) Singly Linked List &mdash; INSERT AT BEGINNING and INSERT AT END</b></p>
+    <pre>Algorithm INSERT_AT_BEGINNING(head, data)
+1.  newNode &larr; getnode();  newNode.data &larr; data
+2.  newNode.next &larr; head
+3.  head &larr; newNode
+4.  return head                        // Time: O(1)
+
+Algorithm INSERT_AT_END(head, data)
+1.  newNode &larr; getnode();  newNode.data &larr; data;  newNode.next &larr; NULL
+2.  if head = NULL  then head &larr; newNode; return head
+3.  temp &larr; head
+4.  while temp.next ≠ NULL do  temp &larr; temp.next   // traverse to last
+5.  temp.next &larr; newNode
+6.  return head                        // Time: O(n)</pre>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno b">Q12</span><span class="qtitle">Memory allocation strategies</span><span class="mod-pill">Module 2</span></div>
+    <div class="scheme">Scheme: (a) Best Fit, First Fit, Worst Fit worked solution &mdash; 6 marks &bull; (b) Correct algorithm &mdash; 3 marks</div>
+    <p><b>Given:</b> Free blocks = <code class="inline">400K, 600K, 250K, 500K</code> (in memory order) &bull; Requests = <code class="inline">357K, 210K, 468K, 491K</code></p>
+
+    <p><b>(a) BEST FIT</b> &mdash; allocate from the <i>smallest</i> block that is big enough:</p>
+    <table>
+      <tr><th>Request</th><th>Block used</th><th>Left over</th></tr>
+      <tr><td>357K</td><td>400K</td><td>43K</td></tr>
+      <tr><td>210K</td><td>250K</td><td>40K</td></tr>
+      <tr><td>468K</td><td>500K</td><td>32K</td></tr>
+      <tr><td>491K</td><td>600K</td><td>109K</td></tr>
+    </table>
+    <div class="ok"><b>Best Fit handles ALL requests.</b></div>
+
+    <p><b>FIRST FIT</b> &mdash; allocate from the <i>first</i> block (in order) that is big enough:</p>
+    <table>
+      <tr><th>Request</th><th>Block used</th><th>Left over</th></tr>
+      <tr><td>357K</td><td>400K</td><td>43K</td></tr>
+      <tr><td>210K</td><td>600K</td><td>390K</td></tr>
+      <tr><td>468K</td><td>500K</td><td>32K</td></tr>
+      <tr><td>491K</td><td colspan="2" style="color:var(--rose)"><b>Cannot be allocated</b> (43K, 390K, 32K, 250K all &lt; 491K)</td></tr>
+    </table>
+
+    <p><b>WORST FIT</b> &mdash; allocate from the <i>largest</i> available block:</p>
+    <table>
+      <tr><th>Request</th><th>Block used</th><th>Left over</th></tr>
+      <tr><td>357K</td><td>600K</td><td>243K</td></tr>
+      <tr><td>210K</td><td>500K</td><td>290K</td></tr>
+      <tr><td>468K</td><td colspan="2" style="color:var(--rose)"><b>Cannot be allocated</b> (left: 243K, 290K, 43K, 250K)</td></tr>
+      <tr><td>491K</td><td colspan="2" style="color:var(--rose)"><b>Cannot be allocated</b></td></tr>
+    </table>
+    <div class="ok"><b>Conclusion:</b> Only <b>Best Fit</b> satisfies all four requests. First Fit fails on 491K; Worst Fit fails on 468K and 491K.</div>
+
+    <p><b>(b) Best-Fit allocation algorithm</b></p>
+    <pre>Algorithm BESTFIT(blocks[], m, request)
+1.  best &larr; &minus;1;  minLeft &larr; &infin;
+2.  for i &larr; 0 to m&minus;1 do
+3.      if blocks[i] &ge; request AND (blocks[i] &minus; request) &lt; minLeft then
+4.          minLeft &larr; blocks[i] &minus; request;  best &larr; i
+5.  if best = &minus;1  then print "No block available"; return
+6.  allocate from blocks[best];  blocks[best] &larr; blocks[best] &minus; request</pre>
+  </div>
+
+  <!-- MODULE 3 -->
+  <div class="card" style="border-top:5px solid var(--amber)">
+    <div class="qhead"><span class="qno b">Q13</span><span class="qtitle">Tree from traversals &amp; Dijkstra's shortest path</span><span class="mod-pill">Module 3</span></div>
+    <div class="scheme">Scheme: (a) Algorithm (recursive / non-recursive) &mdash; 3 (1 each for traversals) + find Inorder, Preorder, Postorder &mdash; 2 &bull; (b) A&ndash;F path: ABDF, Distance 17 &mdash; 4 marks</div>
+
+    <p><b>(a) Construct the binary tree and give its traversals</b></p>
+    <p>Given: <b>Inorder</b> = ABCDEFGHI, <b>Preorder</b> = FBADCEGHI &rArr; <b>Postorder</b> = ACEDBHIGF</p>
+    <p>Construction logic: first letter of preorder = root (F). In inorder, letters left of F form the left subtree, right of F the right subtree; recurse on each part.</p>
+    <pre class="tree">                    F
+                  /   \
+                B       G
+               / \        \
+             A    D        H
+                 / \         \
+               C     E         I</pre>
+    <p><b>Traversal algorithms:</b></p>
+    <pre>InOrder(t):    if t ≠ NULL:  InOrder(t.left);  visit(t);  InOrder(t.right)
+PreOrder(t):   if t ≠ NULL:  visit(t);  PreOrder(t.left);  PreOrder(t.right)
+PostOrder(t):  if t ≠ NULL:  PostOrder(t.left);  PostOrder(t.right);  visit(t)</pre>
+    <div class="ok">Check on the tree above &mdash; Inorder: <b>ABCDEFGHI</b> &bull; Preorder: <b>FBADCEGHI</b> &bull; Postorder: <b>ACEDBHIGF</b> &nbsp;&nbsp;(all match the scheme key)</div>
+
+    <p><b>(b) Dijkstra's algorithm &mdash; shortest path from A to F</b></p>
+    <pre>Algorithm DIJKSTRA(G, src)
+1.  dist[src] ← 0;  dist[v] ← ∞ for all other v;  S ← ∅
+2.  insert all vertices into priority queue PQ keyed by dist
+3.  while PQ ≠ empty do
+4.      u ← extract-min(PQ);  S ← S ∪ {u}
+5.      for each edge (u, v, w) with v ∉ S do
+6.          if dist[u] + w &lt; dist[v]  then dist[v] ← dist[u] + w;  parent[v] ← u;  decrease-key(PQ, v)
+7.  Trace parents back from destination to get the path</pre>
+    <svg viewBox="0 0 560 190" style="width:100%;max-width:560px;background:#fff;border:1px solid var(--line);border-radius:10px">
+      <style>text{font:12px Arial}</style>
+      <line x1="80" y1="90" x2="200" y2="35" stroke="#94a3b8" stroke-width="2"/><text x="120" y="52" fill="#475569">5</text>
+      <line x1="80" y1="90" x2="200" y2="150" stroke="#94a3b8" stroke-width="2"/><text x="118" y="140" fill="#475569">10</text>
+      <line x1="200" y1="35" x2="320" y2="70" stroke="#94a3b8" stroke-width="2"/><text x="255" y="42" fill="#475569">3</text>
+      <line x1="200" y1="35" x2="320" y2="130" stroke="#2563eb" stroke-width="2.5"/><text x="252" y="98" fill="#2563eb" font-weight="bold">4</text>
+      <line x1="200" y1="150" x2="320" y2="130" stroke="#94a3b8" stroke-width="2"/><text x="250" y="152" fill="#475569">8</text>
+      <line x1="320" y1="130" x2="450" y2="150" stroke="#94a3b8" stroke-width="2"/><text x="385" y="134" fill="#475569">2</text>
+      <line x1="320" y1="70" x2="470" y2="80" stroke="#2563eb" stroke-width="2.5"/><text x="390" y="60" fill="#2563eb" font-weight="bold">8</text>
+      <line x1="450" y1="150" x2="470" y2="80" stroke="#94a3b8" stroke-width="2"/><text x="470" y="122" fill="#475569">9</text>
+      <circle cx="80" cy="90" r="16" fill="#2563eb"/><text x="75" y="95" fill="#fff" font-weight="bold">A</text>
+      <circle cx="200" cy="35" r="16" fill="#2563eb"/><text x="195" y="40" fill="#fff" font-weight="bold">B</text>
+      <circle cx="200" cy="150" r="16" fill="#475569"/><text x="195" y="155" fill="#fff" font-weight="bold">C</text>
+      <circle cx="320" cy="130" r="16" fill="#475569"/><text x="315" y="135" fill="#fff" font-weight="bold">E</text>
+      <circle cx="320" cy="70" r="16" fill="#2563eb"/><text x="315" y="75" fill="#fff" font-weight="bold">D</text>
+      <circle cx="470" cy="80" r="16" fill="#2563eb"/><text x="465" y="85" fill="#fff" font-weight="bold">F</text>
+    </svg>
+    <table>
+      <tr><th>Step</th><th>Vertex settled</th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th></tr>
+      <tr><td>1</td><td>A</td><td><b>0</b></td><td>5(A)</td><td>10(A)</td><td>&infin;</td><td>&infin;</td><td>&infin;</td></tr>
+      <tr><td>2</td><td>B</td><td>0</td><td><b>5(A)</b></td><td>8(B)</td><td>9(B)</td><td>&infin;</td><td>&infin;</td></tr>
+      <tr><td>3</td><td>C</td><td>0</td><td>5(A)</td><td><b>8(B)</b></td><td>9(B)</td><td>16(C)</td><td>&infin;</td></tr>
+      <tr><td>4</td><td>D</td><td>0</td><td>5(A)</td><td>8(B)</td><td><b>9(B)</b></td><td>11(D)</td><td>17(D)</td></tr>
+      <tr><td>5</td><td>E</td><td>0</td><td>5(A)</td><td>8(B)</td><td>9(B)</td><td><b>11(D)</b></td><td>17(D)</td></tr>
+      <tr><td>6</td><td>F</td><td>0</td><td>5(A)</td><td>8(B)</td><td>9(B)</td><td>11(D)</td><td><b>17(D)</b></td></tr>
+    </table>
+    <div class="ok">Shortest path A &rarr; F: <b>A &rarr; B &rarr; D &rarr; F</b>, Distance = 5 + 4 + 8 = <b>17</b> &nbsp;&nbsp;(matches scheme key)</div>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno b">Q14</span><span class="qtitle">BFS algorithm &amp; DFS from vertex E</span><span class="mod-pill">Module 3</span></div>
+    <div class="scheme">Scheme: (a) Correct algorithm &mdash; 3 + DFS on the given graph from source E (any correct answer) &mdash; 3 &bull; (b) Correct algorithm &mdash; 3</div>
+
+    <p><b>(a) Breadth-First Search (BFS) algorithm</b></p>
+    <pre>Algorithm BFS(G, s)
+1.  for each vertex v: visited[v] ← false
+2.  Q ← empty queue;  visited[s] ← true;  ENQUEUE(Q, s)
+3.  while Q ≠ empty do
+4.      u ← DEQUEUE(Q);  visit(u)
+5.      for each neighbour w of u do
+6.          if visited[w] = false then visited[w] ← true; ENQUEUE(Q, w)
+// Time: O(V + E)  with adjacency list. Uses a QUEUE (FIFO).</pre>
+
+    <p><b>DFS on the given graph starting from source vertex E</b> (adjacency taken alphabetically):</p>
+    <pre>Graph edges:  A—B, A—C, B—D, B—E, C—F, D—G, E—G
+
+DFS-Visit(E):  visit E → neighbours of E: B, G
+   B (first) → neighbours of B: A, D, E(visited)
+      A → neighbours of A: B(visited), C
+         C → neighbours of C: A(visited), F
+            F → all neighbours visited → backtrack
+   G → neighbours of G: D, E(visited)
+      D → neighbours of D: B(visited), G(visited) → backtrack</pre>
+    <div class="ok"><b>DFS order from E: E → B → A → C → F → G → D</b> (any correct traversal accepted)</div>
+
+    <p><b>(b) Kruskal's Minimum Spanning Tree algorithm</b></p>
+    <pre>Algorithm KRUSKAL(G)
+1.  sort all edges in non-decreasing order of weight
+2.  for each vertex v: MAKE-SET(v)
+3.  T ← ∅
+4.  for each edge (u, v, w) in sorted order do
+5.      if FIND-SET(u) ≠ FIND-SET(v) then      // no cycle formed
+6.          T ← T ∪ {(u,v)};  UNION(u, v)
+7.  return T                      // T has V−1 edges, total weight = MST cost</pre>
+    <p>Uses the <b>Union-Find (Disjoint Set)</b> data structure; greedy choice of the lightest safe edge; complexity <b>O(E log E)</b>.</p>
+  </div>
+
+  <!-- MODULE 4 -->
+  <div class="card" style="border-top:5px solid var(--violet)">
+    <div class="qhead"><span class="qno b">Q15</span><span class="qtitle">Hashing with separate chaining</span><span class="mod-pill">Module 4</span></div>
+    <div class="scheme">Scheme: Correct algorithm &mdash; 4 marks + explanation with figure &mdash; 2 marks</div>
+    <p><b>Concept.</b> Hashing maps a key <code class="inline">k</code> to a table slot using a hash function <code class="inline">h(k) = k mod m</code>. When two keys collide at the same slot, <b>separate chaining</b> stores them in a linked list attached to that slot.</p>
+    <pre>Algorithm CHAINED-HASH-INSERT(T, k)
+1.  j ← h(k)
+2.  insert k at the head of list T[j]          // O(1)
+
+Algorithm CHAINED-HASH-SEARCH(T, k)
+1.  search for key k in list T[h(k)]           // O(list length)
+
+Algorithm CHAINED-HASH-DELETE(T, k)
+1.  delete node containing k from list T[h(k)] // O(list length)</pre>
+    <svg viewBox="0 0 620 220" style="width:100%;max-width:620px;background:#fff;border:1px solid var(--line);border-radius:10px">
+      <style>text{font:12px Arial}</style>
+      <text x="10" y="20" font-weight="bold" fill="#6d28d9">Example: m = 5, h(k) = k mod 5, keys inserted: 12, 7, 25, 2, 17, 22</text>
+      <g>
+        <rect x="20" y="40" width="60" height="34" fill="#ede9fe" stroke="#7c3aed" rx="6"/><text x="42" y="62" font-weight="bold">0</text>
+        <rect x="20" y="85" width="60" height="34" fill="#ede9fe" stroke="#7c3aed" rx="6"/><text x="42" y="107" font-weight="bold">1</text>
+        <rect x="20" y="130" width="60" height="34" fill="#ede9fe" stroke="#7c3aed" rx="6"/><text x="42" y="152" font-weight="bold">2</text>
+        <rect x="20" y="175" width="60" height="34" fill="#ede9fe" stroke="#7c3aed" rx="6"/><text x="42" y="197" font-weight="bold">3</text>
+      </g>
+      <!-- slot 0: 25 -->
+      <line x1="80" y1="57" x2="120" y2="57" stroke="#7c3aed"/><rect x="120" y="42" width="50" height="30" fill="#fff" stroke="#7c3aed" rx="5"/><text x="134" y="62">25</text><text x="170" y="62" fill="#94a3b8">∧</text>
+      <!-- slot 1: 7? 7 mod5=2. Recompute: 12%5=2, 7%5=2, 25%5=0, 2%5=2, 17%5=2, 22%5=2 -->
+      <!-- slot 2 chain: 12,7,2,17,22 -->
+      <line x1="80" y1="102" x2="120" y2="102" stroke="#7c3aed"/><rect x="120" y="87" width="46" height="30" fill="#fff" stroke="#7c3aed" rx="5"/><text x="133" y="107">12</text>
+      <line x1="166" y1="102" x2="200" y2="102" stroke="#7c3aed"/><rect x="200" y="87" width="46" height="30" fill="#fff" stroke="#7c3aed" rx="5"/><text x="213" y="107">7</text>
+      <line x1="246" y1="102" x2="280" y2="102" stroke="#7c3aed"/><rect x="280" y="87" width="46" height="30" fill="#fff" stroke="#7c3aed" rx="5"/><text x="293" y="107">2</text>
+      <line x1="326" y1="102" x2="360" y2="102" stroke="#7c3aed"/><rect x="360" y="87" width="46" height="30" fill="#fff" stroke="#7c3aed" rx="5"/><text x="373" y="107">17</text>
+      <line x1="406" y1="102" x2="440" y2="102" stroke="#7c3aed"/><rect x="440" y="87" width="46" height="30" fill="#fff" stroke="#7c3aed" rx="5"/><text x="453" y="107">22</text><text x="490" y="107" fill="#94a3b8">∧</text>
+      <!-- slot 3: empty -->
+      <text x="120" y="197" fill="#94a3b8">empty (∧)</text>
+    </svg>
+    <div class="ok">Load factor &alpha; = n / m; average search &Theta;(1 + &alpha;). No clustering, deletions are easy; needs extra pointer space.</div>
+  </div>
+
+  <div class="card">
+    <div class="qhead"><span class="qno b">Q16</span><span class="qtitle">Collision resolution &amp; Max-Heap</span><span class="mod-pill">Module 4</span></div>
+    <div class="scheme">Scheme: (a) Linear probing &mdash; 2 + Quadratic probing &mdash; 2 + Double hashing &mdash; 2 &bull; (b) Create max-heap &mdash; 1.5 + delete root &mdash; 1.5</div>
+
+    <p><b>(a) Open-addressing collision resolution techniques</b> (Table size m = 11, <code class="inline">h(k) = k mod 11</code>; keys: 12, 18, 13, 2, 3, 23, 5, 15)</p>
+    <p><b>1. Linear Probing</b> &mdash; on collision, probe <code class="inline">(h(k) + i) mod m</code>, i = 0, 1, 2, &hellip;</p>
+    <table>
+      <tr><th>Key</th><th>h(k)</th><th>Probing sequence</th><th>Final slot</th></tr>
+      <tr><td>12</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr><td>18</td><td>7</td><td>7</td><td>7</td></tr>
+      <tr><td>13</td><td>2</td><td>2</td><td>2</td></tr>
+      <tr><td>2</td><td>2</td><td>2&rarr;3</td><td>3</td></tr>
+      <tr><td>3</td><td>3</td><td>3&rarr;4</td><td>4</td></tr>
+      <tr><td>23</td><td>1</td><td>1&rarr;2&rarr;3&rarr;4&rarr;5</td><td>5</td></tr>
+      <tr><td>5</td><td>5</td><td>5&rarr;6</td><td>6</td></tr>
+      <tr><td>15</td><td>4</td><td>4&rarr;5&rarr;6&rarr;7&rarr;8</td><td>8</td></tr>
+    </table>
+    <p><b>2. Quadratic Probing</b> &mdash; probe <code class="inline">(h(k) + i&sup2;) mod m</code>: keys 2, 3 probe once (slots 3, 4); <b>23</b>: 1&rarr;(1+1)=2 occ&rarr;(1+4)=5 &radic;; <b>15</b>: 4&rarr;5 occ&rarr;(4+4)=8 &radic;. Less clustering but may fail even when table is not full.</p>
+    <p><b>3. Double Hashing</b> &mdash; probe <code class="inline">(h&#8321;(k) + i&middot;h&#8322;(k)) mod m</code> with second hash <code class="inline">h&#8322;(k) = 7 &minus; (k mod 7)</code>: key <b>2</b>: h&#8322;=5 &rarr; 2&rarr;7 occ&rarr;1 occ&rarr;<b>6</b> &radic; (spreads keys uniformly; no clustering, but deletion is hard).</p>
+    <div class="ok">Linear: <b>clustering, cache-friendly</b> &bull; Quadratic: <b>secondary clustering possible</b> &bull; Double hashing: <b>best distribution, needs prime m</b></div>
+
+    <p><b>(b) Build a Max-Heap from [3, 9, 2, 7, 1, 5] and delete the root</b></p>
+    <p><b>Step 1 &mdash; Build (heapify from last internal node, i = 2 down to 0):</b></p>
+    <pre>[3, 9, 2, 7, 1, 5]
+heapify(i=2): 2 < 5 → swap      → [3, 9, 5, 7, 1, 2]
+heapify(i=1):  9 > 7, 1 → OK
+heapify(i=0):  3 < 9 → swap      → [9, 3, 5, 7, 1, 2]
+               then 3 < 7 at child → swap → [9, 7, 5, 3, 1, 2]   ✔ MAX-HEAP
+        9
+      /   \
+     7     5
+    / \   /
+   3   1 2</pre>
+    <p><b>Step 2 &mdash; Delete root (9):</b> replace root by last element (2) and heapify:</p>
+    <pre>Remove 9 → move 2 to root: [2, 7, 5, 3, 1]
+heapify(0): 2 < 7 → swap → [7, 2, 5, 3, 1]
+            2 < 3 → swap → [7, 3, 5, 2, 1]   ✔ still a MAX-HEAP
+        7
+      /   \
+     3     5
+    / \
+   2   1</pre>
+  </div>
+</section>
+
+<!-- ===================== QUIZ ===================== -->
+<section id="quiz">
+  <h2 class="sec">Interactive Quiz &mdash; Test Yourself</h2>
+  <p class="sec-sub">15 questions &bull; covers all four modules &bull; answers checked instantly</p>
+  <div id="scoreBar"></div>
+  <div id="quizBox"></div>
+  <div style="text-align:center;margin-top:14px">
+    <button class="btn" onclick="gradeQuiz()">Check Answers</button>
+    <button class="btn" style="background:#64748b;margin-left:8px" onclick="resetQuiz()">Reset</button>
+  </div>
+</section>
+
+<!-- ===================== KNOWLEDGE GRAPH ===================== -->
+<section id="kgraph">
+  <h2 class="sec">Knowledge Graph &mdash; PCCST303 Topic Map</h2>
+  <p class="sec-sub">Click any node to see details &bull; Modules &rarr; topics &rarr; sub-topics</p>
+  <div id="graphWrap"><svg id="kg"></svg></div>
+  <div id="ginfo">Click a node in the graph to view a summary of that topic.</div>
+</section>
+
+</main>
+
+<footer>PCCST303 &bull; Data Structures and Algorithms &bull; KTU &bull; Compiled from scheme 06PCCST303112504 &bull; For study purposes</footer>
+
+<script>
+/* ================= QUIZ ================= */
+const QUIZ=[
+ {q:"Time complexity of binary search on a sorted array of n elements:",o:["O(n)","O(log n)","O(n log n)","O(n²)"],a:1,m:"Each step halves the search space → T(n)=T(n/2)+c = O(log n)."},
+ {q:"Which of these grows SLOWEST as n increases?",o:["(log n)²","log n","n","n log n"],a:1,m:"logarithmic growth is the slowest among these."},
+ {q:"Postfix form of the infix expression A + B * C is:",o:["ABC*+","AB+C*","+A*BC","ABC+*"],a:0,m:"* has higher precedence: A (BC*) + → ABC*+."},
+ {q:"Best-case time of the optimized bubble sort (with swapped flag):",o:["O(n²)","O(n log n)","O(n)","O(log n)"],a:2,m:"One pass, no swaps → break. Worst/average = O(n²)."},
+ {q:"Best-Fit memory allocation chooses:",o:["the first block that fits","the largest block","the smallest block that fits","a random block"],a:2,m:"Best fit = smallest sufficient free block; it alone satisfied all requests 357/210/468/491K."},
+ {q:"Inorder traversal of a BST always yields:",o:["random order","sorted (ascending) order","level order","descending order"],a:1,m:"Left → Root → Right on a BST gives ascending order."},
+ {q:"A queue processes elements in which order?",o:["LIFO","FIFO","LILO","priority order"],a:1,m:"First In, First Out — insert at rear, delete at front."},
+ {q:"Preorder traversal visits nodes in the order:",o:["left, root, right","root, left, right","left, right, root","root, right, left"],a:1,m:"Root first, then left subtree, then right subtree."},
+ {q:"DFS (Depth-First Search) is implemented using:",o:["queue","priority queue","stack","hash table"],a:2,m:"DFS goes deep first — naturally uses a stack (or recursion)."},
+ {q:"BFS (Breadth-First Search) is implemented using:",o:["stack","queue","heap","linked list"],a:1,m:"BFS explores level by level using a FIFO queue."},
+ {q:"Dijkstra's shortest-path algorithm requires:",o:["negative edge weights","non-negative edge weights","a DAG only","a complete graph"],a:1,m:"Negative weights break Dijkstra's greedy relaxation; use Bellman-Ford instead."},
+ {q:"In a max-heap, every parent node is:",o:["≤ its children","≥ its children","= its children","unrelated to children"],a:1,m:"Max-heap property: parent ≥ children; root is the maximum."},
+ {q:"The main drawback of linear probing is:",o:["needs two hash functions","primary clustering","cannot delete keys","requires sorted keys"],a:1,m:"Consecutive occupied slots form clusters, degrading probe length."},
+ {q:"Double hashing resolves collisions using:",o:["a linked list at each slot","quadratic jumps of size i²","a second hash function for the step size","rehashing the whole table"],a:2,m:"Probe (h₁(k) + i·h₂(k)) mod m — e.g. h₂(k)=7−(k mod 7)."},
+ {q:"f(n) = Θ(g(n)) means:",o:["f is only an upper bound of g","f is only a lower bound of g","g is both an upper and lower bound of f (tight bound)","f and g are unrelated"],a:2,m:"Θ = O AND Ω — f grows at exactly the same rate as g."}
+];
+const box=document.getElementById('quizBox');
+QUIZ.forEach((it,i)=>{
+  const d=document.createElement('div');d.className='quiz-q';
+  d.innerHTML='<p>'+(i+1)+'. '+it.q+'</p>'+it.o.map((o,j)=>'<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'">'+o+'</label>').join('')+'<div class="fb" id="fb'+i+'"></div>';
+  box.appendChild(d);
+});
+function gradeQuiz(){
+  let s=0;
+  QUIZ.forEach((it,i)=>{
+    const sel=document.querySelector('input[name="q'+i+'"]:checked');
+    const fb=document.getElementById('fb'+i);fb.style.display='block';
+    if(sel&&+sel.value===it.a){s++;fb.style.color='#047857';fb.textContent='✔ Correct — '+it.m;}
+    else{fb.style.color='#be123c';fb.textContent='✘ Incorrect. Correct answer: '+it.o[it.a]+'. '+it.m;}
+  });
+  const bar=document.getElementById('scoreBar');bar.style.display='block';
+  bar.innerHTML='Your score: '+s+' / '+QUIZ.length+' ('+Math.round(s/QUIZ.length*100)+'%) — '+(s>=12?'Excellent, exam ready!':s>=8?'Good, revise the weak topics.':'Re-study the answer sections above.');
+  bar.scrollIntoView({behavior:'smooth'});
+}
+function resetQuiz(){
+  document.querySelectorAll('#quizBox input').forEach(r=>r.checked=false);
+  document.querySelectorAll('.fb').forEach(f=>f.style.display='none');
+  document.getElementById('scoreBar').style.display='none';
+}
+
+/* ================= KNOWLEDGE GRAPH ================= */
+const INFO={
+ "DSA":"PCCST303 — Data Structures & Algorithms. Foundations of organizing data (structures) and solving problems efficiently (algorithms + complexity).",
+ "M1":"Module 1: Algorithm analysis & linear structures — Big-O/Ω/Θ, growth rates, stacks and expression conversion.",
+ "M2":"Module 2: Queues, linked lists and memory management — FIFO structures, dynamic nodes, and first/best/worst fit allocation.",
+ "M3":"Module 3: Non-linear structures — binary trees with traversals and graphs with BFS, DFS and Dijkstra.",
+ "M4":"Module 4: Hashing & heaps — hash functions, collision resolution, and the max-heap ADT.",
+ "Complexity":"Time/space complexity; binary search = O(log n); ordering log n < (log n)². [Q1, Q4, Q9]",
+ "Asymptotic":"Big-O (upper), Big-Ω (lower), Big-Θ (tight) bounds with formal definitions and graphs. [Q9a]",
+ "Stack":"LIFO structure: PUSH/POP with overflow/underflow; Tower of Hanoi recursion. [Q2, Q7]",
+ "Infix-Postfix":"Operator-precedence algorithm converts A+B−C*(D/E)+F/G → AB+CDE/*−FG/+. [Q10a]",
+ "BubbleSort":"Best O(n) with swap flag; worst & average O(n²). [Q10b]",
+ "Queue":"FIFO: ENQUEUE at rear, DEQUEUE at front; circular array avoids shifting. [Q11a]",
+ "LinkedList":"Dynamic nodes: insert at beginning O(1), at end O(n). [Q11b]",
+ "MemAlloc":"First fit (fast, may fail), best fit (smallest sufficient), worst fit (largest). Only best fit handled 357/210/468/491K. [Q12]",
+ "Trees":"Binary trees: inorder ABCDEFGHI, preorder FBADCEGHI, postorder ACEDBHIGF; BST property. [Q5, Q13a]",
+ "Graphs":"Adjacency matrix O(V²) vs adjacency list O(V+E). [Q6]",
+ "BFS":"Level-by-level traversal using a queue — O(V+E). [Q14a]",
+ "DFS":"Depth-first traversal using a stack/recursion; from E: E→B→A→C→F→G→D. [Q14a]",
+ "Dijkstra":"Greedy shortest path from A: A→B→D→F = 17. Needs non-negative weights. [Q13b]",
+ "Kruskal":"MST algorithm: sort edges, add lightest safe edge via union-find — O(E log E). [Q14b]",
+ "Hashing":"h(k)=k mod m; chaining uses linked lists at each slot (load factor α). [Q15]",
+ "Probing":"Linear (h+i) clusters; quadratic (h+i²) less so; double hashing (h₁+i·h₂) spreads best. [Q16a]",
+ "Heap":"Complete binary tree, max-heap: parent ≥ children; build [3,9,2,7,1,5] → [9,7,5,3,1,2]; delete root → [7,3,5,2,1]. [Q16b]"
+};
+const KG={
+ name:"DSA",children:[
+  {name:"M1",children:[{name:"Complexity"},{name:"Asymptotic"},{name:"Stack"},{name:"Infix-Postfix"},{name:"BubbleSort"}]},
+  {name:"M2",children:[{name:"Queue"},{name:"LinkedList"},{name:"MemAlloc"}]},
+  {name:"M3",children:[{name:"Trees"},{name:"Graphs"},{name:"BFS"},{name:"DFS"},{name:"Dijkstra"},{name:"Kruskal"}]},
+  {name:"M4",children:[{name:"Hashing"},{name:"Probing"},{name:"Heap"}]}
+ ]};
+const svg=document.getElementById('kg'),NS='http://www.w3.org/2000/svg';
+const W=1000,H=620;svg.setAttribute('viewBox','0 0 '+W+' '+H);
+const CX=W/2,CY=H/2-10,R=215,R2=112,R3=52;
+const MODC={M1:'#2563eb',M2:'#059669',M3:'#d97706',M4:'#7c3aed'};
+function line(x1,y1,x2,y2,c){const l=document.createElementNS(NS,'line');l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);l.setAttribute('stroke',c);l.setAttribute('stroke-width','1.5');l.setAttribute('opacity','.55');svg.appendChild(l);}
+function node(x,y,r,fill,label,cls){
+ const g=document.createElementNS(NS,'g');g.setAttribute('class','gnode');
+ const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',r);c.setAttribute('fill',fill);c.setAttribute('stroke','#e2e8f0');c.setAttribute('stroke-width','2');
+ const t=document.createElementNS(NS,'text');t.setAttribute('x',x);t.setAttribute('y',y+4);t.setAttribute('text-anchor','middle');t.setAttribute('font-weight','700');t.setAttribute('font-size',r>40?14:11);t.textContent=label;
+ g.appendChild(c);g.appendChild(t);
+ g.addEventListener('click',()=>{document.getElementById('ginfo').innerHTML='<b style="color:#fbbf24">'+label+':</b> '+(INFO[label]||'');});
+ svg.appendChild(g);
+}
+// root
+node(CX,CY,46,'#e11d48','DSA');
+KG.children.forEach((m,i)=>{
+ const a=-Math.PI/2+i*Math.PI/2;
+ const mx=CX+R*Math.cos(a),my=CY+R*Math.sin(a);
+ line(CX,CY,mx,my,MODC[m.name]);
+ node(mx,my,30,MODC[m.name],m.name);
+ const n=m.children.length;
+ m.children.forEach((t,j)=>{
+   const b=a-Math.PI/2.6+(n>1?j*(Math.PI/1.3)/(n-1):0);
+   const tx=mx+R2*Math.cos(b),ty=my+R2*Math.sin(b);
+   line(mx,my,tx,ty,MODC[m.name]);
+   node(tx,ty,Math.min(20,150/(t.name.length*0.55+3)),'#1e293b',t.name.length>10?t.name.slice(0,10)+'…':t.name);
+ });
+});
+</script>
+</body>
+</html>
