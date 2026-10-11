@@ -1,0 +1,4 @@
+.superpowers/
+*.png
+ocr_results.txt
+node_modules/
