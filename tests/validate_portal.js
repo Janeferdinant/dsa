@@ -82,11 +82,19 @@ const appCount = (html.match(/class=["'][^"']*app-section[^"']*["']/g) || []).le
 assert(appCount >= 18, `Contains at least 18 Real-World Application sections (found ${appCount})`);
 
 // 5. Dedicated Revision Engines
-const vivaCount = (html.match(/class=["'][^"']*viva-item[^"']*["']/g) || []).length;
-assert(vivaCount >= 36, `Contains Viva Voce Bank with >= 36 questions (found ${vivaCount})`);
+// Count only the static markup. The inline <script> holds JS row templates
+// (viva-item-${idx}, qc-${idx}) that look like items but are not rendered ones;
+// matching them made an earlier version of this test over-count by one.
+const markup = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+const { vivaQuestions, quizQuestions, experimentsData } = require('../scripts/generate_portal.js');
 
-const quizCount = (html.match(/class=["'][^"']*quiz-card[^"']*["']/g) || []).length;
-assert(quizCount >= 15, `Contains Interactive Quiz with >= 15 questions (found ${quizCount})`);
+const vivaCount = (markup.match(/class=["'][^"']*viva-item[^"']*["']/g) || []).length;
+assert(vivaCount === 36, `Viva Voce Bank has exactly 36 questions (found ${vivaCount})`);
+assert(vivaCount === vivaQuestions.length, `Viva count matches the generator data (${vivaQuestions.length})`);
+
+const quizCount = (markup.match(/class=["'][^"']*quiz-card[^"']*["']/g) || []).length;
+assert(quizCount === 15, `Interactive Quiz has exactly 15 questions (found ${quizCount})`);
+assert(quizCount === quizQuestions.length, `Quiz count matches the generator data (${quizQuestions.length})`);
 
 assert(html.includes('id="kg-canvas"') || html.includes('id="knowledge-graph"'), 'Contains interactive Knowledge Graph container');
 
@@ -99,6 +107,24 @@ const externalScripts = (html.match(/<script[^>]+src=["']http/gi) || []).length;
 const externalStylesheets = (html.match(/<link[^>]+rel=["']stylesheet["'][^>]+href=["']http/gi) || []).length;
 assert(externalScripts === 0, `Zero external scripts for 100% offline standalone usage (found ${externalScripts})`);
 assert(externalStylesheets === 0, `Zero external stylesheets for 100% offline standalone usage (found ${externalStylesheets})`);
+
+// 8. C programs and terminal output panels are real, not hand-written
+const crypto = require('crypto');
+const recorded = JSON.parse(fs.readFileSync(path.resolve(__dirname, '..', 'scripts', 'program_output.json'), 'utf8'));
+const unescapeHtml = s => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&');
+const shownOutputs = [...markup.matchAll(/<pre class="terminal-output">([\s\S]*?)<\/pre>/g)].map(m => unescapeHtml(m[1]));
+assert(shownOutputs.length === 18, `Shows 18 terminal output panels (found ${shownOutputs.length})`);
+let hashesOk = true;
+let outputsOk = true;
+experimentsData.forEach((exp, i) => {
+  const rec = recorded.programs[exp.num];
+  if (!rec || rec.sha256 !== crypto.createHash('sha256').update(exp.code).digest('hex')) hashesOk = false;
+  if (!rec || shownOutputs[i] !== rec.output) outputsOk = false;
+});
+assert(hashesOk, 'Every program source matches the one that was compiled and run (scripts/program_output.json)');
+assert(outputsOk, 'Every terminal output panel equals the recorded output of its program');
+assert(experimentsData.every(e => !/\b(rand|time)\s*\(/.test(e.code)), 'Programs are deterministic (no rand or time), so the recorded output is reproducible');
+assert(['-Wall', '-Wextra', '-std=c11'].every(f => recorded.flags.includes(f)), 'Programs were built with gcc -Wall -Wextra -std=c11');
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
 if (failed > 0) {
