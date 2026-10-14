@@ -2982,6 +2982,10 @@ int main() {
   }
 ];
 
+// A Windows checkout with autocrlf stores this file with CRLF line endings, which
+// would put \r into the C programs. Normalise so output and hashes are identical everywhere.
+for (const exp of experimentsData) exp.code = exp.code.replace(/\r\n/g, '\n');
+
 const vivaQuestions = [
   { q: "What is a sparse matrix, and why is the 3-tuple format preferred?", a: "A sparse matrix has a majority of zero elements. The 3-tuple representation (row, col, value) stores only non-zero entries, saving significant memory (O(non-zeros) instead of O(r*c)).", tag: "CO1 · K2" },
   { q: "What is the time complexity of the Fast Transpose algorithm?", a: "Fast Transpose runs in O(cols + non-zeros) time by precomputing the starting position of each column in the transposed array.", tag: "CO2 · K3" },
