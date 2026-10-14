@@ -3053,7 +3053,8 @@ const vivaQuestions = [
   { q: "What is the height of a balanced binary search tree with N nodes?", a: "The height is floor(log2(N)), ensuring O(log N) insertion, deletion, and search operations.", tag: "CO2 · K3" },
   { q: "Explain First-Fit vs Best-Fit allocation.", a: "First-Fit allocates the first free block that is large enough (fastest). Best-Fit searches for the smallest free block that fits (minimizes wasted block space).", tag: "CO4 · K3" },
   { q: "What is Levenshtein Distance in spell checking?", a: "The minimum number of single-character edits (insertions, deletions, substitutions) required to change one word into another.", tag: "CO1 · K3" },
-  { q: "How are recursion and system call stack related in tree traversals?", a: "Recursive function calls utilize the operating system call stack to store activation records (local variables and return addresses) of unvisited branches.", tag: "CO1 · K2" }
+  { q: "How are recursion and system call stack related in tree traversals?", a: "Recursive function calls utilize the operating system call stack to store activation records (local variables and return addresses) of unvisited branches.", tag: "CO1 · K2" },
+  { q: "In the mark-and-sweep garbage collector of Experiment 16, what do the mark and sweep phases do, and why are the mark bits cleared before each collection?", a: "Mark: starting from the root set (the ids the program can still reach), set the mark bit of every allocated block that is reachable. Sweep: walk the whole block list once and free every allocated block whose mark bit is still clear, coalescing it with any free neighbours. The mark bits are cleared first so that a bit left over from the previous collection cannot make a dead block look live. One collection takes time proportional to the number of blocks in the list.", tag: "CO4 · K3" }
 ];
 
 const quizQuestions = [
@@ -3156,6 +3157,12 @@ const quizQuestions = [
     options: ["Greedy Best-First Search", "Breadth First Search (BFS)", "Binary Search", "Topological Sort"],
     ans: 1,
     exp: "BFS explores states level-by-level, ensuring the shortest sequence of pours to reach 2L in a jug."
+  },
+  {
+    q: "A hash table of size 10 uses h(k) = k mod 10 with linear probing. After inserting 15, 25 and 35 in that order into an empty table, at which index is 35 stored?",
+    options: ["5", "6", "7", "8"],
+    ans: 2,
+    exp: "15 goes to index 5. 25 also hashes to 5, which is taken, so it goes to the next free slot, 6. 35 probes 5 and 6 (both taken) and is stored at 7. Such growing runs of occupied slots are called primary clustering."
   }
 ];
 
@@ -4317,10 +4324,10 @@ function buildHtml() {
       document.getElementById('graph-section').style.display = 'none';
 
       if (mode === 'viva') {
-        drawerTitle.innerText = '🎯 Viva Voce Master Bank (36+ Questions)';
+        drawerTitle.innerText = '🎯 Viva Voce Master Bank (37 Questions)';
         document.getElementById('viva-section').style.display = 'block';
       } else if (mode === 'quiz') {
-        drawerTitle.innerText = '⚡ Interactive Revision Quiz (15 Marks)';
+        drawerTitle.innerText = '⚡ Interactive Revision Quiz (16 Questions)';
         document.getElementById('quiz-section').style.display = 'block';
       } else if (mode === 'graph') {
         drawerTitle.innerText = '🌐 Interactive 3D Knowledge Graph';

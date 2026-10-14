@@ -55,7 +55,7 @@ flowchart LR
 
 ## Data
 
-No datasets. All sample inputs are small values hard-coded in the programs. The viva (36 questions) and quiz (15 questions) banks were written for this portal. No student data. Experiment 14 uses sample customer names that appear to be fictional; the owner is asked to confirm (see the PR).
+No datasets. All sample inputs are small values hard-coded in the programs. The viva (37 questions) and quiz (16 questions) banks were written for this portal. No student data. Experiment 14 uses sample customer names that appear to be fictional; the owner is asked to confirm (see the PR).
 
 ## Results
 
@@ -68,9 +68,9 @@ This is a teaching tool with no performance metrics. Verification (run log: [`do
 | Static analysis (`-fanalyzer`) | 18 of 18 clean | Verified (re-run 2026-10-14, after adding NULL checks and cleanup to exp05 and exp08) | `gcc -Wall -Wextra -std=c11 -pedantic -fanalyzer -c`, GCC 16.2.0 | 2026-10-14 |
 | Portal tests | 45 passed, 0 failed | Verified (re-run 2026-10-14) | `node tests/validate_portal.js` | 2026-10-14 |
 | Browser checks at 390 px and 1280 px | all passed, no console errors, no overflow, no external requests | Verified (re-run 2026-10-14) | Playwright 1.59.1, Chromium | 2026-10-14 |
-| Viva questions / quiz questions | 36 / 15 | Verified (re-run 2026-10-14) | counted in the generated HTML | 2026-10-14 |
+| Viva questions / quiz questions | 37 / 16 | Verified (re-run 2026-10-14, after adding one viva and one quiz question; log: [`docs/runs/2026-10-14-dsa-viva-quiz.md`](docs/runs/2026-10-14-dsa-viva-quiz.md)) | counted in the generated HTML and in the generator data | 2026-10-14 |
 
-An earlier README said 37 viva and 16 quiz questions. That came from the test counting the JavaScript row templates as items; the real counts are 36 and 15.
+An earlier README said 37 viva and 16 quiz questions while the portal had 36 and 15, because the test counted JavaScript row templates as items. One viva question (mark-and-sweep) and one quiz question (linear probing) were then added, so the real counts now match the earlier figures: 37 and 16.
 
 ## Tech stack
 

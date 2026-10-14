@@ -90,11 +90,11 @@ const markup = html.replace(/<script[\s\S]*?<\/script>/gi, '');
 const { vivaQuestions, quizQuestions, experimentsData } = require('../scripts/generate_portal.js');
 
 const vivaCount = (markup.match(/class=["'][^"']*viva-item[^"']*["']/g) || []).length;
-assert(vivaCount === 36, `Viva Voce Bank has exactly 36 questions (found ${vivaCount})`);
+assert(vivaCount === 37, `Viva Voce Bank has exactly 37 questions (found ${vivaCount})`);
 assert(vivaCount === vivaQuestions.length, `Viva count matches the generator data (${vivaQuestions.length})`);
 
 const quizCount = (markup.match(/class=["'][^"']*quiz-card[^"']*["']/g) || []).length;
-assert(quizCount === 15, `Interactive Quiz has exactly 15 questions (found ${quizCount})`);
+assert(quizCount === 16, `Interactive Quiz has exactly 16 questions (found ${quizCount})`);
 assert(quizCount === quizQuestions.length, `Quiz count matches the generator data (${quizQuestions.length})`);
 
 assert(html.includes('id="kg-canvas"') || html.includes('id="knowledge-graph"'), 'Contains interactive Knowledge Graph container');
