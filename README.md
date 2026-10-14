@@ -1,6 +1,6 @@
 # Data Structures Lab Portal: all 18 KTU PCCSL307 experiments with compiled-and-run C programs
 
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
 ## Overview
 
@@ -138,7 +138,7 @@ Experiment list: KTU PCCSL307 Data Structures Lab syllabus (APJ Abdul Kalam Tech
 
 ## License
 
-[CC BY-NC-SA 4.0](LICENSE). Original work © Jane Rose Ferdinant, licensed CC BY-NC-SA 4.0. Third-party components retain their own licenses; see THIRD_PARTY_NOTICES.md.
+[CC BY-NC-ND 4.0](LICENSE). Original work © Jane Rose Ferdinant, licensed CC BY-NC-ND 4.0. Third-party components retain their own licenses; see THIRD_PARTY_NOTICES.md.
 
 ## Author
 
