@@ -1,8 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('Generating complete single-file Data Structures Lab portal...');
-
 // We will construct the entire standalone HTML with embedded styles, scripts, SVGs, data, and logic.
 // Let's create helper generators for experiments, viva bank, quiz questions, and knowledge graph data.
 
@@ -93,17 +91,6 @@ int main() {
     }
     return 0;
 }`,
-    output: `[KTU S3 Lab Terminal GCC]
-Poly A: 4x^3 + 3x^2 + 5x^0
-Poly B: 2x^3 + 4x^1 + 1x^0
-Adding corresponding terms...
-Matched degree 3: (4 + 2)x^3 = 6x^3
-Unmatched degree 2: 3x^2 copied
-Unmatched degree 1: 4x^1 copied
-Matched degree 0: (5 + 1)x^0 = 6x^0
-------------------------------------------------
-Resultant Polynomial: 6x^3 + 3x^2 + 4x^1 + 6x^0
-Execution completed successfully. (Return code 0)`,
     demoType: "poly_add",
     app: "Computer Algebra Systems (SymPy, Wolfram Mathematica), 3D Bézier curve rendering in game engines, and numerical signal polynomial filters."
   },
@@ -113,15 +100,18 @@ Execution completed successfully. (Return code 0)`,
     co: "CO1, CO2",
     level: "K3",
     category: "linear",
-    problem: "Given matrices with predominantly zero values, represent them in 3-Tuple (Row, Column, Value) coordinate format. Implement matrix addition and the fast transpose algorithm in O(cols + nonzeros) time.",
+    problem: "Given matrices with predominantly zero values, represent them in 3-Tuple (Row, Column, Value) format. Add two sparse matrices by merging their tuples in row-major order, and find the transpose with the fast transpose algorithm in O(cols + nonzeros) time.",
     algo: [
-      "Represent matrix as array of triplets where tuple[0] stores (rows, cols, total_non_zeros).",
-      "For addition: Traverse tuple A and B in row-major order. If (rA == rB && cA == cB), add values. Else append the element with smaller linear index.",
-      "For Fast Transpose:",
-      "  a. Count frequency of elements in each column of matrix A.",
-      "  b. Compute starting address array for each column in transposed matrix B.",
-      "  c. For each non-zero element in A, place it at its exact target index in B with swapped row and column indices.",
-      "Terminate and display transposed 3-tuple structure."
+      "Represent each matrix as an array of triplets; tuple[0] stores (rows, cols, total_non_zeros).",
+      "For addition: check that both matrices have the same dimensions.",
+      "Traverse tuples of A and B in row-major order, comparing (row, col).",
+      "  a. If positions are equal: add the values and keep the sum only if it is not zero.",
+      "  b. Otherwise copy the tuple with the smaller (row, col) into the result.",
+      "Copy the remaining tuples of A or B, then set the result header.",
+      "For Fast Transpose: count the non-zeros in each column of A.",
+      "Compute the starting position of each column in the transposed matrix B.",
+      "For each tuple of A, place it at its target slot in B with row and column swapped.",
+      "Print the 3-tuple and dense forms of A, B, A + B and the transpose."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -141,62 +131,216 @@ Execution completed successfully. (Return code 0)`,
       <path d="M250 380 L250 395" stroke="#94a3b8" stroke-width="2"/>
       <circle cx="250" cy="405" r="10" fill="#a855f7"/>
     </svg>`,
-    code: `#include <stdio.h>
+    code: `/*
+ * Experiment 2: Sparse Matrix Transpose and Addition
+ * Syllabus task: Find the transpose of a sparse matrix and the sum
+ * of two sparse matrices.
+ *
+ * How it works:
+ *   A sparse matrix is stored as a 3-tuple (triplet) table. Entry 0
+ *   holds (rows, cols, number of non-zeros); entries 1..n hold the
+ *   (row, col, value) of each non-zero, in row-major order.
+ *   - Addition walks both tables together, like merging two sorted
+ *     lists: the earlier position is copied, equal positions are
+ *     added, and a sum of zero is dropped.
+ *   - Fast transpose counts the terms in each column, turns the
+ *     counts into start positions, then puts every term straight
+ *     into its slot. Time: O(cols + non-zeros).
+ */
+#include <stdio.h>
+#include <stdbool.h>
 
-struct Element {
-    int row, col, val;
-};
+#define MAX_TERMS 20   /* table size: 1 header + up to 19 non-zeros */
+#define MAX_DIM   10   /* largest number of rows or columns         */
 
-void fastTranspose(struct Element a[], struct Element b[]) {
-    int totalTerms = a[0].val;
-    int cols = a[0].col;
-    int rowTerms[50] = {0}, startPos[50] = {0};
+/* One entry of a 3-tuple table. */
+typedef struct {
+    int row;
+    int col;
+    int val;
+} Term;
 
-    b[0].row = a[0].col;
-    b[0].col = a[0].row;
-    b[0].val = totalTerms;
+/* Compare positions in row-major order: row first, then column.
+ * Negative: x comes first, 0: same place, positive: y comes first. */
+static int comparePos(Term x, Term y) {
+    if (x.row != y.row) return x.row - y.row;
+    return x.col - y.col;
+}
 
-    if (totalTerms <= 0) return;
+/* Guard: the table must fit our arrays, every term must lie inside
+ * the matrix, and the terms must be in row-major order. */
+static bool isValid(const Term t[]) {
+    int rows = t[0].row, cols = t[0].col, n = t[0].val;
+    if (rows < 1 || rows > MAX_DIM || cols < 1 || cols > MAX_DIM) return false;
+    if (n < 0 || n >= MAX_TERMS) return false;
+    for (int i = 1; i <= n; i++) {
+        if (t[i].row < 0 || t[i].row >= rows) return false;
+        if (t[i].col < 0 || t[i].col >= cols) return false;
+        if (i > 1 && comparePos(t[i - 1], t[i]) >= 0) return false;
+    }
+    return true;
+}
 
-    for (int i = 1; i <= totalTerms; i++) rowTerms[a[i].col]++;
-    startPos[0] = 1;
-    for (int i = 1; i < cols; i++) startPos[i] = startPos[i - 1] + rowTerms[i - 1];
-
-    for (int i = 1; i <= totalTerms; i++) {
-        int j = startPos[a[i].col]++;
-        b[j].row = a[i].col;
-        b[j].col = a[i].row;
-        b[j].val = a[i].val;
+/* Print a 3-tuple table; entry 0 is the header. */
+static void printTuples(const char *name, const Term t[]) {
+    printf("%s in 3-tuple form:\\n", name);
+    printf("  Row Col Val\\n");
+    for (int i = 0; i <= t[0].val; i++) {
+        printf("  %3d %3d %3d%s\\n", t[i].row, t[i].col, t[i].val,
+               i == 0 ? "   <- rows, cols, non-zeros" : "");
     }
 }
 
-int main() {
-    struct Element A[10] = {{4, 4, 3}, {0, 1, 10}, {1, 3, 20}, {3, 0, 30}};
-    struct Element B[10];
-    fastTranspose(A, B);
-
-    printf("Row\\tCol\\tVal\\n");
-    for (int i = 0; i <= B[0].val; i++) {
-        printf("%d\\t%d\\t%d\\n", B[i].row, B[i].col, B[i].val);
+/* Expand a 3-tuple table into a full grid and print it. */
+static void printDense(const char *name, const Term t[]) {
+    int grid[MAX_DIM][MAX_DIM] = {{0}};
+    for (int i = 1; i <= t[0].val; i++) {
+        grid[t[i].row][t[i].col] = t[i].val;
     }
+    printf("%s as a dense matrix:\\n", name);
+    for (int r = 0; r < t[0].row; r++) {
+        printf(" ");
+        for (int c = 0; c < t[0].col; c++) printf(" %4d", grid[r][c]);
+        printf("\\n");
+    }
+}
+
+/* Append one term to table c at position *k (checks for space). */
+static bool appendTerm(Term c[], int *k, Term t) {
+    if (*k >= MAX_TERMS) {
+        printf("Error: result table is full\\n");
+        return false;
+    }
+    c[*k] = t;
+    (*k)++;
+    return true;
+}
+
+/* A term found in only one matrix is copied as it is. */
+static bool copyStep(const char *from, Term t, Term c[], int *k) {
+    printf("  (%d,%d) only in %s: copy %d\\n", t.row, t.col, from, t.val);
+    return appendTerm(c, k, t);
+}
+
+/* C = A + B, all in 3-tuple form. Returns false on an error. */
+static bool addSparse(const Term a[], const Term b[], Term c[]) {
+    int i = 1, j = 1, k = 1;
+    int na = a[0].val, nb = b[0].val;
+
+    /* Step 1: matrices can be added only if their sizes match. */
+    if (a[0].row != b[0].row || a[0].col != b[0].col) {
+        printf("Error: cannot add a %d x %d and a %d x %d matrix\\n",
+               a[0].row, a[0].col, b[0].row, b[0].col);
+        return false;
+    }
+    printf("A + B: both are %d x %d, merge in row-major order\\n",
+           a[0].row, a[0].col);
+
+    /* Step 2: walk both tables while each has terms left. */
+    while (i <= na && j <= nb) {
+        int order = comparePos(a[i], b[j]);
+        if (order < 0) {                   /* A's term comes first */
+            if (!copyStep("A", a[i++], c, &k)) return false;
+        } else if (order > 0) {            /* B's term comes first */
+            if (!copyStep("B", b[j++], c, &k)) return false;
+        } else {                           /* same place: add */
+            Term s = {a[i].row, a[i].col, a[i].val + b[j].val};
+            printf("  (%d,%d) in both: A %d, B %d -> sum %d%s\\n",
+                   s.row, s.col, a[i].val, b[j].val, s.val,
+                   s.val == 0 ? ", dropped" : "");
+            if (s.val != 0 && !appendTerm(c, &k, s)) return false;
+            i++;
+            j++;
+        }
+    }
+
+    /* Step 3: copy the terms left over in A or in B. */
+    while (i <= na) {
+        if (!copyStep("A", a[i++], c, &k)) return false;
+    }
+    while (j <= nb) {
+        if (!copyStep("B", b[j++], c, &k)) return false;
+    }
+
+    /* Step 4: header = same size, k - 1 non-zeros. */
+    c[0].row = a[0].row;
+    c[0].col = a[0].col;
+    c[0].val = k - 1;
+    return true;
+}
+
+/* T = transpose of A using the fast transpose method. */
+static void fastTranspose(const Term a[], Term t[]) {
+    int count[MAX_DIM] = {0};   /* non-zeros in each column of A */
+    int start[MAX_DIM] = {0};   /* next free slot for each column */
+    int cols = a[0].col, n = a[0].val;
+
+    /* Header: rows and columns swap; the count stays the same. */
+    t[0].row = a[0].col;
+    t[0].col = a[0].row;
+    t[0].val = n;
+
+    /* Step 1: count the terms in each column of A. */
+    for (int i = 1; i <= n; i++) count[a[i].col]++;
+
+    /* Step 2: column c starts right after columns 0..c-1. */
+    start[0] = 1;
+    for (int c = 1; c < cols; c++) start[c] = start[c - 1] + count[c - 1];
+
+    printf("Transpose of A: fast transpose\\n");
+    printf("  Column   :");
+    for (int c = 0; c < cols; c++) printf(" %3d", c);
+    printf("\\n  Count    :");
+    for (int c = 0; c < cols; c++) printf(" %3d", count[c]);
+    printf("\\n  Start pos:");
+    for (int c = 0; c < cols; c++) printf(" %3d", start[c]);
+    printf("\\n");
+
+    /* Step 3: drop each term into its slot with row and col swapped. */
+    for (int i = 1; i <= n; i++) {
+        int slot = start[a[i].col];
+        start[a[i].col]++;
+        t[slot].row = a[i].col;
+        t[slot].col = a[i].row;
+        t[slot].val = a[i].val;
+        printf("  A(%d,%d) = %d -> slot %d as (%d,%d)\\n",
+               a[i].row, a[i].col, a[i].val, slot, a[i].col, a[i].row);
+    }
+}
+
+int main(void) {
+    /* Matrix A: the sample matrix used earlier in this experiment. */
+    Term a[MAX_TERMS] = {{4, 4, 3}, {0, 1, 10}, {1, 3, 20}, {3, 0, 30}};
+    /* Matrix B: same size; (0,1) overlaps A, and at (3,0) the -30
+     * cancels A's 30, so that position must vanish from A + B. */
+    Term b[MAX_TERMS] = {{4, 4, 3}, {0, 1, 5}, {2, 2, 40}, {3, 0, -30}};
+    Term sum[MAX_TERMS] = {{0}};
+    Term at[MAX_TERMS] = {{0}};
+
+    printf("Experiment 2: Sparse Matrix Transpose and Addition\\n\\n");
+    if (!isValid(a) || !isValid(b)) {
+        printf("Error: an input table is not a valid 3-tuple table\\n");
+        return 1;
+    }
+
+    printTuples("Matrix A", a);
+    printDense("Matrix A", a);
+    printf("\\n");
+    printTuples("Matrix B", b);
+    printDense("Matrix B", b);
+    printf("\\n");
+
+    if (addSparse(a, b, sum)) {
+        printTuples("A + B", sum);
+        printDense("A + B", sum);
+    }
+    printf("\\n");
+
+    fastTranspose(a, at);
+    printTuples("Transpose of A", at);
+    printDense("Transpose of A", at);
     return 0;
 }`,
-    output: `[Fast Transpose Output - 3-Tuple]
-Original Matrix Dimensions: 4 Rows x 4 Cols (3 Non-Zeros)
-Tuple Representation:
-Row	Col	Val
-4	4	3  <-- (Metadata)
-0	1	10
-1	3	20
-3	0	30
-
-Transposed Matrix 3-Tuple:
-Row	Col	Val
-4	4	3  <-- (Metadata)
-0	3	30
-1	0	10
-3	1	20
-Completed in O(Cols + NonZeros) linear time!`,
     demoType: "sparse_matrix",
     app: "Google PageRank algorithm (web graph adjacency matrix), Netflix collaborative filtering recommendation engines, structural finite element stress analysis."
   },
@@ -206,17 +350,18 @@ Completed in O(Cols + NonZeros) linear time!`,
     co: "CO1, CO2",
     level: "K3",
     category: "linear",
-    problem: "Convert an arithmetic expression from infix notation to postfix (Reverse Polish Notation) using an operator stack and evaluate the resulting postfix expression using an operand stack.",
+    problem: "Convert an infix expression to postfix using an operator stack, then evaluate the postfix expression using an operand stack. Handle parentheses, operator precedence, right-associative ^, and errors such as division by zero.",
     algo: [
-      "Initialize an operator stack for conversion.",
-      "Scan infix expression from left to right:",
-      "  a. If operand, output directly to postfix string.",
-      "  b. If '(', push to operator stack.",
-      "  c. If ')', pop from stack to output until '(' is encountered.",
-      "  d. If operator op, pop operators with >= precedence from stack to output, then push op.",
-      "Pop all remaining operators to output string.",
-      "For Evaluation: Scan postfix string. If operand, push to stack. If operator, pop op2, pop op1, compute op1 (operator) op2, push result back.",
-      "Top of stack is final numerical evaluation."
+      "Scan the infix expression from left to right.",
+      "If the symbol is an operand: append it to the postfix output.",
+      "If the symbol is (: push it on the operator stack.",
+      "If the symbol is ): pop operators to the output until ( is found, then discard (.",
+      "If the symbol is an operator: pop operators of higher precedence (or equal precedence, unless the operator is right-associative ^), then push the new operator.",
+      "At the end, pop all remaining operators to the output.",
+      "To evaluate: scan the postfix string left to right.",
+      "  a. Operand: push its value on the operand stack.",
+      "  b. Operator: pop two operands, apply the operator, push the result.",
+      "Check for stack underflow and division by zero; the final value left on the stack is the result."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -241,61 +386,237 @@ Completed in O(Cols + NonZeros) linear time!`,
       <rect x="180" y="380" width="140" height="35" rx="17" fill="#a855f7"/>
       <text x="250" y="402" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">END</text>
     </svg>`,
-    code: `#include <stdio.h>
-#include <ctype.h>
+    code: `/*
+ * Experiment 3: Infix to Postfix Conversion and Evaluation
+ * Syllabus task: Convert an infix expression to postfix and then
+ * evaluate the postfix expression using a stack.
+ *
+ * How it works:
+ *   1. Conversion: scan the infix string from left to right.
+ *      Operands go straight to the postfix string. Operators wait
+ *      on an operator stack and leave it when an operator of lower
+ *      precedence arrives or a ')' closes their group.
+ *      + - * / are left-associative; ^ is right-associative.
+ *   2. Evaluation: scan the postfix string. Push each operand on an
+ *      integer stack; for an operator pop b, pop a, push (a op b).
+ *   Operands are single digits 0-9, so every character is one token.
+ *   All arithmetic is integer arithmetic (7/2 gives 3).
+ */
+#include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 
-char stack[100];
-int top = -1;
+#define MAX 50   /* longest expression and deepest stack */
 
-void push(char c) { stack[++top] = c; }
-char pop() { return stack[top--]; }
-int prec(char c) {
-    if (c == '^') return 3;
-    if (c == '*' || c == '/') return 2;
-    if (c == '+' || c == '-') return 1;
+/* Operator stack used for conversion. */
+typedef struct {
+    char items[MAX];
+    int top;            /* index of the top item, -1 when empty */
+} CharStack;
+
+/* Operand stack used for evaluation. */
+typedef struct {
+    int items[MAX];
+    int top;
+} IntStack;
+
+/* Print an error message and report failure. */
+static bool fail(const char *message) {
+    printf("    Error: %s\\n", message);
+    return false;
+}
+
+/* Push onto the operator stack; false on overflow. */
+static bool pushChar(CharStack *s, char c) {
+    if (s->top == MAX - 1) return fail("operator stack overflow");
+    s->items[++s->top] = c;
+    return true;
+}
+
+/* Pop from the operator stack; false on underflow. */
+static bool popChar(CharStack *s, char *c) {
+    if (s->top == -1) return fail("operator stack underflow");
+    *c = s->items[s->top--];
+    return true;
+}
+
+/* Push onto the operand stack; false on overflow. */
+static bool pushInt(IntStack *s, int v) {
+    if (s->top == MAX - 1) return fail("operand stack overflow");
+    s->items[++s->top] = v;
+    return true;
+}
+
+/* Pop from the operand stack; false on underflow (missing operand). */
+static bool popInt(IntStack *s, int *v) {
+    if (s->top == -1) return fail("operand stack underflow");
+    *v = s->items[s->top--];
+    return true;
+}
+
+/* Precedence: ^ highest, then * and /, then + and -; 0 = not an operator. */
+static int precedence(char op) {
+    if (op == '^') return 3;
+    if (op == '*' || op == '/') return 2;
+    if (op == '+' || op == '-') return 1;
     return 0;
 }
 
-void infixToPostfix(char infix[], char postfix[]) {
-    int k = 0;
-    for (int i = 0; infix[i]; i++) {
-        char ch = infix[i];
-        if (isalnum(ch)) postfix[k++] = ch;
-        else if (ch == '(') push(ch);
-        else if (ch == ')') {
-            while (top != -1 && stack[top] != '(') postfix[k++] = pop();
-            pop();
-        } else {
-            while (top != -1 && prec(stack[top]) >= prec(ch)) postfix[k++] = pop();
-            push(ch);
-        }
-    }
-    while (top != -1) postfix[k++] = pop();
-    postfix[k] = '\\0';
+/* Must the operator on top of the stack leave before op is pushed? */
+static bool shouldPop(char top, char op) {
+    if (top == '(') return false;          /* '(' waits for its ')' */
+    if (op == '^') return precedence(top) > precedence(op);  /* right */
+    return precedence(top) >= precedence(op);                /* left  */
 }
 
-int main() {
-    char infix[] = "((A+B)*C)-D";
-    char postfix[100];
-    infixToPostfix(infix, postfix);
-    printf("Infix Expression   : %s\\n", infix);
-    printf("Postfix Expression : %s\\n", postfix);
+/* Print one conversion row: symbol, operator stack, postfix so far. */
+static void showRow(const char *symbol, const CharStack *s,
+                    const char *postfix) {
+    if (postfix[0] == '\\0') {
+        printf("    %-6s %.*s\\n", symbol, s->top + 1, s->items);
+    } else {
+        printf("    %-6s %-9.*s %s\\n", symbol, s->top + 1, s->items, postfix);
+    }
+}
+
+/* Convert infix to postfix, printing each step if trace is true. */
+static bool infixToPostfix(const char *infix, char postfix[], bool trace) {
+    CharStack ops = {.top = -1};
+    int k = 0;                 /* length of the postfix string so far */
+    char c = '\\0';
+
+    if (strlen(infix) >= MAX) return fail("expression too long");
+    postfix[0] = '\\0';
+    if (trace) printf("    Symbol Op stack  Postfix\\n");
+
+    for (int i = 0; infix[i] != '\\0'; i++) {
+        char ch = infix[i];
+        char symbol[2] = {ch, '\\0'};
+        if (isdigit((unsigned char)ch)) {
+            postfix[k++] = ch;                       /* operand: output */
+        } else if (ch == '(') {
+            if (!pushChar(&ops, ch)) return false;  /* open a group */
+        } else if (ch == ')') {
+            /* Close a group: pop to the output until '(' appears. */
+            while (ops.top != -1 && ops.items[ops.top] != '(') {
+                if (!popChar(&ops, &c)) return false;
+                postfix[k++] = c;
+            }
+            if (ops.top == -1) return fail("')' without a matching '('");
+            if (!popChar(&ops, &c)) return false;   /* discard the '(' */
+        } else if (precedence(ch) > 0) {
+            /* Operator: first pop the operators that must go before it. */
+            while (ops.top != -1 && shouldPop(ops.items[ops.top], ch)) {
+                if (!popChar(&ops, &c)) return false;
+                postfix[k++] = c;
+            }
+            if (!pushChar(&ops, ch)) return false;
+        } else {
+            return fail("invalid symbol in expression");
+        }
+        postfix[k] = '\\0';
+        if (trace) showRow(symbol, &ops, postfix);
+    }
+
+    /* End of input: move every remaining operator to the output. */
+    while (ops.top != -1) {
+        if (!popChar(&ops, &c)) return false;
+        if (c == '(') return fail("'(' without a matching ')'");
+        postfix[k++] = c;
+    }
+    postfix[k] = '\\0';
+    if (trace) showRow("end", &ops, postfix);
+    return true;
+}
+
+/* Compute a op b. Returns NULL on success, or an error message. */
+static const char *applyOperator(char op, int a, int b, int *result) {
+    switch (op) {
+    case '+': *result = a + b; return NULL;
+    case '-': *result = a - b; return NULL;
+    case '*': *result = a * b; return NULL;
+    case '/':
+        if (b == 0) return "division by zero";
+        *result = a / b;
+        return NULL;
+    case '^':
+        if (b < 0) return "negative power";
+        *result = 1;
+        for (int i = 0; i < b; i++) *result *= a;
+        return NULL;
+    default:
+        return "unknown operator";
+    }
+}
+
+/* Evaluate a postfix string, printing every push and every operation. */
+static bool evaluatePostfix(const char *postfix, int *result) {
+    IntStack s = {.top = -1};
+    char action[32];
+
+    printf("    Token  Action          Operand stack\\n");
+    for (int i = 0; postfix[i] != '\\0'; i++) {
+        char ch = postfix[i];
+        if (isdigit((unsigned char)ch)) {
+            /* Operand: push its value. */
+            if (!pushInt(&s, ch - '0')) return false;
+            snprintf(action, sizeof action, "push %d", ch - '0');
+        } else {
+            /* Operator: pop b (the top) first, then a; push a op b. */
+            int a = 0, b = 0, r = 0;
+            const char *err;
+            if (!popInt(&s, &b) || !popInt(&s, &a)) return false;
+            err = applyOperator(ch, a, b, &r);
+            if (err != NULL) {
+                printf("    %-6c %d %c %d -> Error: %s\\n", ch, a, ch, b, err);
+                return false;
+            }
+            if (!pushInt(&s, r)) return false;
+            snprintf(action, sizeof action, "%d %c %d = %d", a, ch, b, r);
+        }
+        printf("    %-6c %-15s", ch, action);
+        for (int j = 0; j <= s.top; j++) printf(" %d", s.items[j]);
+        printf("\\n");
+    }
+
+    /* A valid expression leaves exactly one value on the stack. */
+    if (s.top != 0) return fail("operands left over (missing operator)");
+    *result = s.items[0];
+    return true;
+}
+
+/* Convert, evaluate and report one expression. */
+static void runExample(int number, const char *infix, const char *note,
+                       bool trace) {
+    char postfix[MAX + 1];
+    int value = 0;
+
+    printf("[%d] Infix  : %s   = %s\\n", number, infix, note);
+    if (!infixToPostfix(infix, postfix, trace)) return;
+    printf("    Postfix: %s\\n", postfix);
+    if (evaluatePostfix(postfix, &value)) {
+        printf("    Result : %d\\n", value);
+    } else {
+        printf("    Result : not defined (evaluation stopped)\\n");
+    }
+}
+
+int main(void) {
+    printf("Experiment 3: Infix -> Postfix -> Evaluate (stacks)\\n\\n");
+
+    /* The earlier sample ((A+B)*C)-D with A=5, B=3, C=2, D=4. */
+    runExample(1, "((5+3)*2)-4", "((A+B)*C)-D, A=5 B=3 C=2 D=4", true);
+    printf("\\n");
+
+    /* ^ is right-associative: 2^3^2 = 2^(3^2) = 512, not 64. */
+    runExample(2, "(1+1)^3^2", "2^(3^2), ^ is right-assoc", true);
+    printf("\\n");
+
+    /* Error handling: the divisor works out to 0. */
+    runExample(3, "8/(3-3)", "8/0, division by zero", false);
     return 0;
 }`,
-    output: `[Infix to Postfix & Evaluation]
-Input Infix   : ((A+B)*C)-D
-Tokenizing and parsing operator stack...
-Final Postfix : AB+C*D-
-
-Numeric Evaluation:
-Let A=5, B=3, C=2, D=4
-Expression: ((5+3)*2)-4
-Step 1: Push 5, Push 3
-Step 2: Operator '+' -> 5 + 3 = 8 (Push 8)
-Step 3: Push 2 -> Operator '*' -> 8 * 2 = 16 (Push 16)
-Step 4: Push 4 -> Operator '-' -> 16 - 4 = 12 (Push 12)
-Final Result: 12`,
     demoType: "stack_eval",
     app: "Compiler arithmetic parsers (GCC, LLVM), Java Bytecode execution stacks, Hewlett-Packard RPN financial calculators."
   },
@@ -305,13 +626,18 @@ Final Result: 12`,
     co: "CO1, CO2",
     level: "K3",
     category: "queues",
-    problem: "Implement linear queue, Double-Ended Queue (DEQUEUE), and Circular Queue using fixed-size arrays with wrap-around modulo arithmetic for efficient memory reuse.",
+    problem: "Implement a linear queue, a double-ended queue (DEQUEUE) and a circular queue using arrays, with overflow and underflow checks, and show why the circular queue avoids wasted space.",
     algo: [
-      "Circular Queue: Maintain front and rear index pointers initialized to -1.",
-      "Enqueue(item): If (front == 0 && rear == MAX-1) || (front == rear + 1), Queue is FULL. Else rear = (rear + 1) % MAX; arr[rear] = item.",
-      "Dequeue(): If front == -1, Queue is EMPTY. Item = arr[front]. If front == rear, reset front = rear = -1. Else front = (front + 1) % MAX.",
-      "Deque Operations: Support insertFront (front = (front - 1 + MAX) % MAX) and deleteRear (rear = (rear - 1 + MAX) % MAX).",
-      "Display elements from front to rear taking wrap-around into account."
+      "Linear queue: keep front and rear; enqueue at rear, dequeue at front; FULL when rear = SIZE - 1.",
+      "Show the limitation: after dequeues, free slots at the front cannot be reused.",
+      "Deque on a circular array: insertRear and deleteFront work as in a queue.",
+      "  a. insertFront: move front back by one (wrapping around), then store.",
+      "  b. deleteRear: read the element at rear, then move rear back by one (wrapping around).",
+      "Circular queue: advance front and rear with (index + 1) % SIZE.",
+      "  a. Empty when front = -1; full when (rear + 1) % SIZE = front.",
+      "  b. When rear reaches the last slot it wraps to index 0 if that slot is free.",
+      "Report OVERFLOW on insert into a full queue and UNDERFLOW on delete from an empty one.",
+      "Print front, rear and contents after every operation."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -336,46 +662,293 @@ Final Result: 12`,
       <rect x="180" y="385" width="140" height="30" rx="15" fill="#a855f7"/>
       <text x="250" y="405" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">END</text>
     </svg>`,
-    code: `#include <stdio.h>
-#define SIZE 5
+    code: `/*
+ * Experiment 04: Queue, DEQUEUE and Circular Queue using Arrays
+ * Syllabus task: Implement Queue, DEQUEUE, and Circular Queue using arrays.
+ *
+ * How it works (front = rear = -1 means "empty" in all three):
+ *   1. Linear queue: insert at rear, delete at front. Once rear reaches
+ *      the last index it reports FULL, even if front slots were freed.
+ *   2. DEQUEUE (double-ended queue): a circular array where both ends can
+ *      insert and delete. An index moves forward with (i + 1) % SIZE and
+ *      backward with (i - 1 + SIZE) % SIZE.
+ *   3. Circular queue: rear = (rear + 1) % SIZE, so rear wraps to index 0
+ *      and reuses the slots freed at the front.
+ *   Each operation prints one row: result, front, rear and contents.
+ */
+#include <stdio.h>
 
-int cqueue[SIZE];
-int front = -1, rear = -1;
+#define LQ_SIZE 4   /* capacity of the linear queue   */
+#define DQ_SIZE 5   /* capacity of the deque          */
+#define CQ_SIZE 5   /* capacity of the circular queue */
 
-int isFull() { return (front == (rear + 1) % SIZE); }
-int isEmpty() { return (front == -1); }
+/* ============ Printing helpers shared by all three parts ============ */
 
-void enqueue(int val) {
-    if (isFull()) { printf("Queue Overflow!\\n"); return; }
-    if (front == -1) front = 0;
-    rear = (rear + 1) % SIZE;
-    cqueue[rear] = val;
-    printf("Enqueued: %d (rear=%d)\\n", val, rear);
+/* Section title followed by the column headings of the trace table */
+void showHeader(const char *title, int size) {
+    printf("\\n=== %s, SIZE = %d ===\\n", title, size);
+    printf("%-16s%-10s%5s%5s  %s\\n",
+           "Operation", "Result", "front", "rear", "Contents");
 }
 
-int dequeue() {
-    if (isEmpty()) { printf("Queue Underflow!\\n"); return -1; }
-    int val = cqueue[front];
-    if (front == rear) front = rear = -1;
-    else front = (front + 1) % SIZE;
-    return val;
+/* First two columns of a row for an insert operation */
+void showInsert(const char *op, int value, int ok) {
+    printf("%-12s%-4d%-10s", op, value, ok ? "ok" : "OVERFLOW");
 }
 
-int main() {
-    enqueue(10); enqueue(20); enqueue(30); enqueue(40);
-    printf("Dequeued: %d\\n", dequeue());
-    enqueue(50); enqueue(60); // Wraps around circularly!
+/* First two columns of a row for a delete operation */
+void showDelete(const char *op, int value, int ok) {
+    printf("%-16s", op);
+    if (ok) printf("got %-6d", value);
+    else printf("%-10s", "UNDERFLOW");
+}
+
+/* Print every array slot; a slot not in use is shown as "-" */
+void showSlots(const int items[], int size, int front, int rear) {
+    printf("    array:");
+    for (int i = 0; i < size; i++) {
+        int used;
+        if (front == -1) used = 0;                          /* empty   */
+        else if (front <= rear) used = (i >= front && i <= rear);
+        else used = (i >= front || i <= rear);              /* wrapped */
+        if (used) printf(" [%d]=%d", i, items[i]);
+        else printf(" [%d]=-", i);
+    }
+    printf("\\n");
+}
+
+/* ======================= Part 1: Linear Queue ======================= */
+
+typedef struct {
+    int items[LQ_SIZE];
+    int front, rear;
+} LinearQueue;
+
+void lqInit(LinearQueue *q) { q->front = q->rear = -1; }
+int lqIsEmpty(const LinearQueue *q) { return q->front == -1; }
+/* Full once rear is at the last index (freed front slots are lost) */
+int lqIsFull(const LinearQueue *q) { return q->rear == LQ_SIZE - 1; }
+
+/* Print front, rear and the elements from front to rear */
+void lqDisplay(const LinearQueue *q) {
+    printf("%5d%5d ", q->front, q->rear);
+    if (lqIsEmpty(q)) {
+        printf(" (empty)\\n");
+        return;
+    }
+    for (int i = q->front; i <= q->rear; i++)
+        printf(" %d", q->items[i]);
+    printf("\\n");
+}
+
+/* Insert at rear: rear = rear + 1 */
+void lqEnqueue(LinearQueue *q, int value) {
+    int ok = !lqIsFull(q);
+    if (ok) {
+        if (lqIsEmpty(q)) q->front = 0;                    /* first item */
+        q->rear = q->rear + 1;
+        q->items[q->rear] = value;
+    }
+    showInsert("Enqueue", value, ok);
+    lqDisplay(q);
+}
+
+/* Delete from front: front = front + 1 */
+void lqDequeue(LinearQueue *q) {
+    int ok = !lqIsEmpty(q), value = 0;
+    if (ok) {
+        value = q->items[q->front];
+        if (q->front == q->rear) q->front = q->rear = -1;  /* now empty */
+        else q->front = q->front + 1;
+    }
+    showDelete("Dequeue", value, ok);
+    lqDisplay(q);
+}
+
+/* ============== Part 2: Double-Ended Queue (DEQUEUE) ============== */
+
+typedef struct {
+    int items[DQ_SIZE];
+    int front, rear;
+} Deque;
+
+void dqInit(Deque *d) { d->front = d->rear = -1; }
+int dqIsEmpty(const Deque *d) { return d->front == -1; }
+/* Full when the slot after rear (circularly) is front */
+int dqIsFull(const Deque *d) { return d->front == (d->rear + 1) % DQ_SIZE; }
+
+/* Print front, rear and the elements from front to rear (wrapping) */
+void dqDisplay(const Deque *d) {
+    printf("%5d%5d ", d->front, d->rear);
+    if (dqIsEmpty(d)) {
+        printf(" (empty)\\n");
+        return;
+    }
+    int count = (d->rear - d->front + DQ_SIZE) % DQ_SIZE + 1;
+    for (int k = 0; k < count; k++)
+        printf(" %d", d->items[(d->front + k) % DQ_SIZE]);
+    printf("\\n");
+}
+
+/* Insert before front: front steps back, 0 wraps to SIZE-1 */
+void dqInsertFront(Deque *d, int value) {
+    int ok = !dqIsFull(d);
+    if (ok) {
+        if (dqIsEmpty(d)) d->front = d->rear = 0;          /* first item */
+        else d->front = (d->front - 1 + DQ_SIZE) % DQ_SIZE;
+        d->items[d->front] = value;
+    }
+    showInsert("insertFront", value, ok);
+    dqDisplay(d);
+}
+
+/* Insert after rear: rear steps forward, SIZE-1 wraps to 0 */
+void dqInsertRear(Deque *d, int value) {
+    int ok = !dqIsFull(d);
+    if (ok) {
+        if (dqIsEmpty(d)) d->front = d->rear = 0;          /* first item */
+        else d->rear = (d->rear + 1) % DQ_SIZE;
+        d->items[d->rear] = value;
+    }
+    showInsert("insertRear", value, ok);
+    dqDisplay(d);
+}
+
+/* Delete at front: front steps forward */
+void dqDeleteFront(Deque *d) {
+    int ok = !dqIsEmpty(d), value = 0;
+    if (ok) {
+        value = d->items[d->front];
+        if (d->front == d->rear) d->front = d->rear = -1;  /* now empty */
+        else d->front = (d->front + 1) % DQ_SIZE;
+    }
+    showDelete("deleteFront", value, ok);
+    dqDisplay(d);
+}
+
+/* Delete at rear: rear steps back */
+void dqDeleteRear(Deque *d) {
+    int ok = !dqIsEmpty(d), value = 0;
+    if (ok) {
+        value = d->items[d->rear];
+        if (d->front == d->rear) d->front = d->rear = -1;  /* now empty */
+        else d->rear = (d->rear - 1 + DQ_SIZE) % DQ_SIZE;
+    }
+    showDelete("deleteRear", value, ok);
+    dqDisplay(d);
+}
+
+/* ====================== Part 3: Circular Queue ====================== */
+
+typedef struct {
+    int items[CQ_SIZE];
+    int front, rear;
+} CircularQueue;
+
+void cqInit(CircularQueue *q) { q->front = q->rear = -1; }
+int cqIsEmpty(const CircularQueue *q) { return q->front == -1; }
+/* Full when the slot after rear (circularly) is front */
+int cqIsFull(const CircularQueue *q) {
+    return q->front == (q->rear + 1) % CQ_SIZE;
+}
+
+/* Print front, rear and the elements from front to rear (wrapping) */
+void cqDisplay(const CircularQueue *q) {
+    printf("%5d%5d ", q->front, q->rear);
+    if (cqIsEmpty(q)) {
+        printf(" (empty)\\n");
+        return;
+    }
+    int count = (q->rear - q->front + CQ_SIZE) % CQ_SIZE + 1;
+    for (int k = 0; k < count; k++)
+        printf(" %d", q->items[(q->front + k) % CQ_SIZE]);
+    printf("\\n");
+}
+
+/* Insert at rear: rear = (rear + 1) % SIZE */
+void cqEnqueue(CircularQueue *q, int value) {
+    int ok = !cqIsFull(q);
+    if (ok) {
+        if (cqIsEmpty(q)) q->front = 0;                    /* first item */
+        q->rear = (q->rear + 1) % CQ_SIZE;
+        q->items[q->rear] = value;
+    }
+    showInsert("Enqueue", value, ok);
+    cqDisplay(q);
+}
+
+/* Delete from front: front = (front + 1) % SIZE */
+void cqDequeue(CircularQueue *q) {
+    int ok = !cqIsEmpty(q), value = 0;
+    if (ok) {
+        value = q->items[q->front];
+        if (q->front == q->rear) q->front = q->rear = -1;  /* now empty */
+        else q->front = (q->front + 1) % CQ_SIZE;
+    }
+    showDelete("Dequeue", value, ok);
+    cqDisplay(q);
+}
+
+/* ============================== Demos ============================== */
+
+void demoLinearQueue(void) {
+    LinearQueue q;
+    lqInit(&q);
+    showHeader("1. Linear Queue", LQ_SIZE);
+    for (int v = 10; v <= 40; v += 10) lqEnqueue(&q, v);   /* fill it   */
+    lqDequeue(&q);                                          /* frees [0] */
+    lqDequeue(&q);                                          /* frees [1] */
+    lqEnqueue(&q, 50);                          /* rear = SIZE-1: FULL */
+    showSlots(q.items, LQ_SIZE, q.front, q.rear);
+    printf("Limitation: [0] and [1] are free, but rear = SIZE-1,\\n");
+    printf("so the queue reports FULL. A circular queue fixes this.\\n");
+}
+
+void demoDeque(void) {
+    Deque d;
+    dqInit(&d);
+    showHeader("2. DEQUEUE on a circular array", DQ_SIZE);
+    dqInsertRear(&d, 10);
+    dqInsertRear(&d, 20);
+    dqInsertFront(&d, 5);        /* front wraps from 0 back to 4 */
+    dqInsertFront(&d, 1);
+    dqInsertRear(&d, 30);        /* deque is now full */
+    showSlots(d.items, DQ_SIZE, d.front, d.rear);
+    dqInsertFront(&d, 0);        /* overflow */
+    dqDeleteFront(&d);
+    dqDeleteRear(&d);
+    dqDeleteRear(&d);
+    dqDeleteFront(&d);
+    dqDeleteRear(&d);            /* last item: deque is empty again */
+    dqDeleteFront(&d);           /* underflow */
+}
+
+void demoCircularQueue(void) {
+    CircularQueue q;
+    cqInit(&q);
+    showHeader("3. Circular Queue", CQ_SIZE);
+    cqEnqueue(&q, 10);
+    cqEnqueue(&q, 20);
+    cqEnqueue(&q, 30);
+    cqDequeue(&q);               /* removes 10, frees slot [0] */
+    cqEnqueue(&q, 40);
+    cqEnqueue(&q, 50);           /* rear reaches the last index 4 */
+    cqEnqueue(&q, 60);           /* rear wraps from 4 to 0 */
+    showSlots(q.items, CQ_SIZE, q.front, q.rear);
+    printf("    rear wrapped 4 -> 0 into the slot freed by 10\\n");
+    cqEnqueue(&q, 70);           /* overflow: queue is full */
+    for (int i = 0; i < 4; i++)  /* front: 1 -> 2 -> 3 -> 4 -> 0 */
+        cqDequeue(&q);
+    printf("    front wrapped 4 -> 0 too: no slot is ever wasted\\n");
+}
+
+int main(void) {
+    printf("Experiment 04: Queue, DEQUEUE and Circular Queue\\n");
+    demoLinearQueue();
+    demoDeque();
+    demoCircularQueue();
     return 0;
 }`,
-    output: `[Circular Queue Execution]
-Enqueued: 10 (front=0, rear=0)
-Enqueued: 20 (front=0, rear=1)
-Enqueued: 30 (front=0, rear=2)
-Enqueued: 40 (front=0, rear=3)
-Dequeued: 10 (front advanced to index 1)
-Enqueued: 50 (front=1, rear=4)
-Enqueued: 60 (Circular wrap! rear wrapped to index 0)
-Memory slots recycled without shifting elements!`,
     demoType: "circular_queue",
     app: "Operating system Round-Robin CPU scheduling, Audio/Video circular playback buffers, printer spooler task queues."
   },
@@ -465,16 +1038,6 @@ int main() {
     forward(); // Disabled!
     return 0;
 }`,
-    output: `[Browser Navigation DLL Simulation]
-Visited -> google.com
-Visited -> github.com
-Visited -> stackoverflow.com
-Back to <- github.com
-Back to <- google.com
-Forward to -> github.com
-Visited -> ktu.edu.in (Severing forward history to stackoverflow.com)
-Forward disabled (latest page)
-Current Page: ktu.edu.in`,
     demoType: "browser_nav",
     app: "Google Chrome & Firefox navigation history, Text editor Undo/Redo buffers, Music player previous/next track traversal."
   },
@@ -484,16 +1047,17 @@ Current Page: ktu.edu.in`,
     co: "CO1, CO4",
     level: "K4",
     category: "linked_lists",
-    problem: "Implement dynamic addition and multiplication of two arbitrarily sized polynomials using singly linked lists with nodes ordered in descending powers.",
+    problem: "Represent polynomials as singly linked lists in descending order of exponent, then implement addition and multiplication of two polynomials.",
     algo: [
-      "Define struct PolyNode with int coeff, int exp, and pointer struct PolyNode *next.",
-      "Polynomial Addition: Traverse both linked lists. While both exist, compare exponents. If equal, sum coefficients and append if non-zero. Otherwise append node with higher exponent. Append remaining nodes.",
-      "Polynomial Multiplication:",
-      "  a. Initialize result list as empty.",
-      "  b. For each term p1 in Poly A, traverse each term p2 in Poly B.",
-      "  c. Multiply coefficients (p1->coeff * p2->coeff) and add exponents (p1->exp + p2->exp).",
-      "  d. Insert product term into result list in sorted order, combining like terms.",
-      "Display the resulting polynomial."
+      "Define a node with coeff, exp and next; keep each list sorted by descending exponent.",
+      "insertTerm: walk the list to the right position; add coefficients if the exponent exists.",
+      "  a. If the combined coefficient becomes 0, unlink and free that node.",
+      "Addition: walk both lists together (merge).",
+      "  a. Equal exponents: add the coefficients and keep the term if the sum is not 0.",
+      "  b. Otherwise copy the term with the larger exponent.",
+      "  c. Copy the remaining terms of either list.",
+      "Multiplication: for every term of P1 and every term of P2, multiply coefficients, add exponents, and insertTerm into the result.",
+      "Print each polynomial, then free every list."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -516,56 +1080,200 @@ Current Page: ktu.edu.in`,
       <rect x="10" y="370" width="120" height="40" rx="8" fill="rgba(30,41,59,0.9)" stroke="#f43f5e"/>
       <text x="70" y="395" text-anchor="middle" fill="#e2e8f0" font-size="10">Insert sorted node</text>
     </svg>`,
-    code: `#include <stdio.h>
+    code: `/*
+ * Experiment 06: Polynomial Addition and Multiplication using
+ *                Singly Linked Lists
+ * Syllabus task: Implement addition and multiplication of polynomials
+ * using singly linked lists.
+ *
+ * How it works:
+ *   A polynomial is a singly linked list of (coeff, exp) nodes kept in
+ *   descending order of exponent: 3x^2 + 5 is [3,2] -> [5,0] -> NULL.
+ *   - insertTerm() puts a term in its sorted place. A like term (same
+ *     exponent) is combined; if its coefficient becomes 0 the node is
+ *     removed.
+ *   - addPoly() merges the two sorted lists: the larger exponent is
+ *     copied first, equal exponents have their coefficients added.
+ *   - multiplyPoly() multiplies every term of one polynomial by every
+ *     term of the other (coefficients multiply, exponents add) and
+ *     inserts each product with insertTerm(), which collects like terms.
+ */
+#include <stdio.h>
 #include <stdlib.h>
 
-struct PolyNode {
-    int coeff, exp;
-    struct PolyNode *next;
-};
+typedef struct PolyNode {
+    int coeff;               /* coefficient            */
+    int exp;                 /* exponent (power of x)  */
+    struct PolyNode *next;   /* next term (lower power) */
+} PolyNode;
 
-struct PolyNode* insert(struct PolyNode *head, int c, int e) {
-    struct PolyNode *newNode = (struct PolyNode*)malloc(sizeof(struct PolyNode));
-    newNode->coeff = c; newNode->exp = e; newNode->next = NULL;
-    if (!head || e > head->exp) { newNode->next = head; return newNode; }
-    struct PolyNode *curr = head;
-    while (curr->next && curr->next->exp >= e) curr = curr->next;
-    if (curr->exp == e) { curr->coeff += c; free(newNode); return head; }
-    newNode->next = curr->next;
-    curr->next = newNode;
+/* Allocate one term; stop the program if memory runs out */
+PolyNode *newNode(int coeff, int exp) {
+    PolyNode *node = malloc(sizeof *node);
+    if (node == NULL) {
+        fprintf(stderr, "Error: out of memory\\n");
+        exit(EXIT_FAILURE);
+    }
+    node->coeff = coeff;
+    node->exp = exp;
+    node->next = NULL;
+    return node;
+}
+
+/* Insert coeff*x^exp in descending order, combining like terms.
+   Returns the (possibly new) head of the list. */
+PolyNode *insertTerm(PolyNode *head, int coeff, int exp) {
+    PolyNode *prev = NULL, *curr = head;
+    if (coeff == 0) return head;                 /* a 0 term adds nothing */
+    while (curr != NULL && curr->exp > exp) {    /* skip higher powers    */
+        prev = curr;
+        curr = curr->next;
+    }
+    if (curr != NULL && curr->exp == exp) {      /* like term: combine    */
+        curr->coeff += coeff;
+        if (curr->coeff == 0) {                  /* cancelled: unlink it  */
+            if (prev == NULL) head = curr->next;
+            else prev->next = curr->next;
+            free(curr);
+        }
+        return head;
+    }
+    PolyNode *node = newNode(coeff, exp);        /* new power: link it in */
+    node->next = curr;
+    if (prev == NULL) return node;               /* it is the new head    */
+    prev->next = node;
     return head;
 }
 
-struct PolyNode* multiply(struct PolyNode *h1, struct PolyNode *h2) {
-    struct PolyNode *res = NULL;
-    for (struct PolyNode *p1 = h1; p1; p1 = p1->next) {
-        for (struct PolyNode *p2 = h2; p2; p2 = p2->next) {
-            res = insert(res, p1->coeff * p2->coeff, p1->exp + p2->exp);
-        }
+/* Print a polynomial as 3x^2 + 5x^1 - 2x^0; an empty list prints 0 */
+void printPoly(const PolyNode *p) {
+    if (p == NULL) {
+        printf("0");
+        return;
     }
-    return res;
+    printf("%dx^%d", p->coeff, p->exp);          /* first term keeps sign */
+    for (p = p->next; p != NULL; p = p->next) {
+        if (p->coeff < 0) printf(" - %dx^%d", -p->coeff, p->exp);
+        else printf(" + %dx^%d", p->coeff, p->exp);
+    }
 }
 
-int main() {
-    struct PolyNode *P1 = NULL, *P2 = NULL;
-    P1 = insert(P1, 3, 2); P1 = insert(P1, 5, 0); // 3x^2 + 5
-    P2 = insert(P2, 2, 1); P2 = insert(P2, 4, 0); // 2x + 4
-    struct PolyNode *Prod = multiply(P1, P2);
-    printf("Product Polynomial: ");
-    for (struct PolyNode *p = Prod; p; p = p->next) printf("%dx^%d ", p->coeff, p->exp);
+/* Print a label, the polynomial and a newline */
+void showPoly(const char *label, const PolyNode *p) {
+    printf("%s", label);
+    printPoly(p);
     printf("\\n");
+}
+
+/* Append a copy of term t after tail, print the step, return new tail */
+PolyNode *copyTerm(PolyNode *tail, const PolyNode *t, const char *from) {
+    printf("  x^%d only in %s: copy %dx^%d\\n", t->exp, from, t->coeff, t->exp);
+    tail->next = newNode(t->coeff, t->exp);
+    return tail->next;
+}
+
+/* Return a NEW list p + q by merging two lists sorted by exponent */
+PolyNode *addPoly(const PolyNode *p, const PolyNode *q) {
+    PolyNode dummy = {0, 0, NULL};   /* result starts at dummy.next */
+    PolyNode *tail = &dummy;         /* last node of the result     */
+    while (p != NULL && q != NULL) {
+        if (p->exp > q->exp) {                   /* p has the higher power */
+            tail = copyTerm(tail, p, "1st");
+            p = p->next;
+        } else if (q->exp > p->exp) {            /* q has the higher power */
+            tail = copyTerm(tail, q, "2nd");
+            q = q->next;
+        } else {                                 /* same power: add coeffs */
+            int sum = p->coeff + q->coeff;
+            printf("  x^%d in both: %d + %d = %d", p->exp, p->coeff, q->coeff, sum);
+            if (sum != 0) {
+                tail->next = newNode(sum, p->exp);
+                tail = tail->next;
+                printf(" -> %dx^%d\\n", sum, p->exp);
+            } else {
+                printf(" -> term dropped\\n");
+            }
+            p = p->next;
+            q = q->next;
+        }
+    }
+    for (; p != NULL; p = p->next) tail = copyTerm(tail, p, "1st");  /* leftovers */
+    for (; q != NULL; q = q->next) tail = copyTerm(tail, q, "2nd");
+    return dummy.next;
+}
+
+/* Return a NEW list p * q: every term times every term */
+PolyNode *multiplyPoly(const PolyNode *p, const PolyNode *q) {
+    PolyNode *result = NULL;
+    for (const PolyNode *a = p; a != NULL; a = a->next) {
+        for (const PolyNode *b = q; b != NULL; b = b->next) {
+            int coeff = a->coeff * b->coeff;     /* coefficients multiply */
+            int exp = a->exp + b->exp;           /* exponents add         */
+            result = insertTerm(result, coeff, exp);
+            printf("  (%dx^%d) * (%dx^%d) = %dx^%d  -> ",
+                   a->coeff, a->exp, b->coeff, b->exp, coeff, exp);
+            printPoly(result);                   /* result so far */
+            printf("\\n");
+        }
+    }
+    return result;
+}
+
+/* Free every node of a list */
+void freePoly(PolyNode *p) {
+    while (p != NULL) {
+        PolyNode *next = p->next;
+        free(p);
+        p = next;
+    }
+}
+
+int main(void) {
+    PolyNode *p1 = NULL, *p2 = NULL, *p3 = NULL;
+
+    /* Sample polynomials; terms may be inserted in any order */
+    p1 = insertTerm(p1, 5, 0);
+    p1 = insertTerm(p1, 3, 2);       /* P1 = 3x^2 + 5 */
+    p2 = insertTerm(p2, 2, 1);
+    p2 = insertTerm(p2, 4, 0);       /* P2 = 2x + 4   */
+    p3 = insertTerm(p3, -4, 0);
+    p3 = insertTerm(p3, 2, 1);       /* P3 = 2x - 4   */
+
+    printf("Experiment 06: Polynomial Addition and Multiplication\\n\\n");
+    showPoly("P1 = ", p1);
+    showPoly("P2 = ", p2);
+
+    printf("\\n--- Addition: merge the two sorted lists ---\\n");
+    PolyNode *sum = addPoly(p1, p2);
+    showPoly("P1 + P2 = ", sum);
+
+    printf("\\n--- Multiplication: every term times every term ---\\n");
+    printf("  term * term = product  -> result so far\\n");
+    PolyNode *prod = multiplyPoly(p1, p2);
+    showPoly("P1 * P2 = ", prod);
+
+    printf("\\n--- Check: negative terms and cancellation ---\\n");
+    showPoly("P3 = ", p3);
+    PolyNode *sum2 = addPoly(p2, p3);
+    showPoly("P2 + P3 = ", sum2);
+    PolyNode *prod2 = multiplyPoly(p2, p3);
+    showPoly("P2 * P3 = ", prod2);
+    printf("  (-8x^1 + 8x^1 = 0, so insertTerm removed the x^1 node)\\n");
+    PolyNode *zero = multiplyPoly(p2, NULL);     /* empty list = 0 */
+    showPoly("P2 * (empty list) = ", zero);
+
+    /* Free every list that was allocated */
+    freePoly(p1);
+    freePoly(p2);
+    freePoly(p3);
+    freePoly(sum);
+    freePoly(prod);
+    freePoly(sum2);
+    freePoly(prod2);
+    freePoly(zero);
+    printf("\\nAll lists freed.\\n");
     return 0;
 }`,
-    output: `[Linked List Polynomial Multiplier]
-Polynomial 1: 3x^2 + 5x^0
-Polynomial 2: 2x^1 + 4x^0
-Calculating terms:
-  (3x^2) * (2x^1) = 6x^3
-  (3x^2) * (4x^0) = 12x^2
-  (5x^0) * (2x^1) = 10x^1
-  (5x^0) * (4x^0) = 20x^0
-Resulting Product: 6x^3 + 12x^2 + 10x^1 + 20x^0
-No static buffer limits!`,
     demoType: "poly_multiply",
     app: "Post-quantum lattice cryptography (ring-LWE polynomials), Digital Signal Processing finite impulse response (FIR) filters."
   },
@@ -575,15 +1283,20 @@ No static buffer limits!`,
     co: "CO1, CO2",
     level: "K4",
     category: "trees",
-    problem: "Construct an expression tree from an arithmetic postfix expression and generate its prefix, infix, and postfix equivalents via recursive tree traversals.",
+    problem: "Build a binary expression tree directly from an infix arithmetic expression (single-letter or single-digit operands; + - * / ^ and parentheses) and print its prefix and postfix equivalents, with a fully parenthesised infix form as a check.",
     algo: [
-      "Define struct TreeNode with char data, and pointers *left, *right.",
-      "Initialize a stack of TreeNode pointers.",
-      "Scan postfix string token by token:",
-      "  a. If operand, create node, set left=right=NULL, and push node pointer to stack.",
-      "  b. If operator, create node, pop right child from stack, pop left child from stack, attach children, and push operator node back to stack.",
-      "Root of expression tree is the single node remaining on stack top.",
-      "Perform Inorder (Infix), Preorder (Prefix), and Postorder (Postfix) traversals recursively."
+      "Define struct Node with char data and pointers *left, *right.",
+      "Use two stacks: an operator stack (chars) and a subtree stack (Node pointers).",
+      "Scan the infix expression from left to right:",
+      "  a. Operand: create a leaf node (left = right = NULL) and push it on the subtree stack.",
+      "  b. '(': push it on the operator stack.",
+      "  c. ')': build subtrees until '(' is on top, then discard the '('.",
+      "  d. Operator: while the stacked operator has higher precedence, or equal precedence and the new one is left-associative (not ^), build a subtree; then push the new operator.",
+      "Build subtree: pop an operator, pop the right then the left subtree, join them under a new operator node and push it.",
+      "At the end, build subtrees for all remaining operators; the single subtree left is the root.",
+      "Preorder traversal (node, left, right) prints the prefix form.",
+      "Postorder traversal (left, right, node) prints the postfix form.",
+      "Inorder traversal with brackets prints the infix form as a check; then free the tree in postorder."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -608,60 +1321,239 @@ No static buffer limits!`,
       <rect x="180" y="385" width="140" height="30" rx="15" fill="#a855f7"/>
       <text x="250" y="405" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">END</text>
     </svg>`,
-    code: `#include <stdio.h>
-#include <stdlib.h>
+    code: `/*
+ * Experiment 7: Expression Tree - Prefix and Postfix Equivalents
+ * Syllabus task: create a binary tree for a given simple arithmetic
+ * expression and find its prefix / postfix equivalent.
+ *
+ * How it works:
+ *   Scan the infix string once with two stacks: operators and subtrees.
+ *   An operand becomes a leaf; '(' is pushed; ')' builds subtrees back
+ *   to its '('. Before an operator is pushed, every stacked operator
+ *   that must go first (higher precedence, or equal and left-assoc) is
+ *   popped and joined with the top two subtrees. The last subtree is
+ *   the tree. Preorder = prefix, postorder = postfix, inorder = infix.
+ */
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-struct TreeNode {
-    char data;
-    struct TreeNode *left, *right;
-};
+#define MAX_EXPR 64     /* longest expression accepted (characters) */
+#define NUM_EXPR 3      /* number of sample expressions */
+#define INDENT 4        /* spaces per level in the sideways tree */
 
-struct TreeNode* stack[50];
-int top = -1;
+typedef struct Node {
+    char data;                  /* operand or operator */
+    struct Node *left, *right;  /* children (both NULL for an operand) */
+} Node;
 
-void push(struct TreeNode *n) { stack[++top] = n; }
-struct TreeNode* pop() { return stack[top--]; }
+/* The two stacks used while building the tree */
+typedef struct {
+    Node *tree[MAX_EXPR];       /* stack of subtree pointers */
+    int tree_top;
+    char op[MAX_EXPR];          /* stack of operators and '(' */
+    int op_top;
+} Stacks;
 
-struct TreeNode* buildTree(char postfix[]) {
-    for (int i = 0; postfix[i]; i++) {
-        struct TreeNode *node = (struct TreeNode*)malloc(sizeof(struct TreeNode));
-        node->data = postfix[i];
-        if (isalnum(postfix[i])) {
-            node->left = node->right = NULL;
-        } else {
-            node->right = pop();
-            node->left = pop();
-        }
-        push(node);
+/* Allocate one node; returns NULL if memory runs out */
+static Node *new_node(char data, Node *left, Node *right) {
+    Node *n = malloc(sizeof *n);
+    if (n == NULL) {
+        fprintf(stderr, "Out of memory\\n");
+        return NULL;
     }
-    return pop();
+    n->data = data;
+    n->left = left;
+    n->right = right;
+    return n;
 }
 
-void inorder(struct TreeNode *r) {
-    if (!r) return;
-    if (r->left) printf("(");
-    inorder(r->left);
-    printf("%c", r->data);
-    inorder(r->right);
-    if (r->right) printf(")");
+/* Free a tree in postorder: both children first, then the node */
+static void free_tree(Node *n) {
+    if (n != NULL) {
+        free_tree(n->left);
+        free_tree(n->right);
+        free(n);
+    }
 }
 
-int main() {
-    char postfix[] = "ab+c*";
-    struct TreeNode *root = buildTree(postfix);
-    printf("Inorder (Infix) : "); inorder(root); printf("\\n");
+/* Precedence: ^ highest, then * /, then + -; 0 for anything else */
+static int precedence(char c) {
+    switch (c) {
+    case '^': return 3;
+    case '*': case '/': return 2;
+    case '+': case '-': return 1;
+    default: return 0;
+    }
+}
+
+/* Must the stacked operator 'top' be applied before 'incoming'? */
+static int apply_first(char top, char incoming) {
+    if (precedence(top) > precedence(incoming)) {
+        return 1;
+    }
+    /* Equal precedence: + - * / are left-associative, so the older
+       operator goes first; ^ is right-associative, so it waits.
+       '(' has precedence 0, so it is never applied here. */
+    return precedence(top) == precedence(incoming) && incoming != '^';
+}
+
+/* Inorder traversal with brackets: fully parenthesised infix */
+static void print_infix(const Node *n) {
+    if (n == NULL) {
+        return;
+    }
+    if (n->left == NULL && n->right == NULL) {
+        putchar(n->data);               /* operand: no brackets */
+    } else {
+        putchar('(');
+        print_infix(n->left);
+        putchar(n->data);
+        print_infix(n->right);
+        putchar(')');
+    }
+}
+
+/* Preorder traversal (node, left, right) = prefix form */
+static void print_prefix(const Node *n) {
+    if (n != NULL) {
+        printf(" %c", n->data);
+        print_prefix(n->left);
+        print_prefix(n->right);
+    }
+}
+
+/* Postorder traversal (left, right, node) = postfix form */
+static void print_postfix(const Node *n) {
+    if (n != NULL) {
+        print_postfix(n->left);
+        print_postfix(n->right);
+        printf(" %c", n->data);
+    }
+}
+
+/* Sideways tree: right subtree above, the node, left subtree below */
+static void print_sideways(const Node *n, int depth) {
+    if (n != NULL) {
+        print_sideways(n->right, depth + 1);
+        printf("%*s%c\\n", 2 + INDENT * depth, "", n->data);
+        print_sideways(n->left, depth + 1);
+    }
+}
+
+/* Pop one operator and two subtrees, join them under a new node and
+   push it back. Returns 0 if the expression is malformed. */
+static int build_subtree(Stacks *s) {
+    char op;
+    Node *left, *right, *node;
+
+    if (s->op_top < 0 || s->tree_top < 1) {
+        return 0;                       /* operator without operands */
+    }
+    op = s->op[s->op_top--];
+    right = s->tree[s->tree_top--];     /* popped first = right child */
+    left = s->tree[s->tree_top--];
+    node = new_node(op, left, right);
+    if (node == NULL) {
+        free_tree(left);
+        free_tree(right);
+        return 0;
+    }
+    s->tree[++s->tree_top] = node;
+    printf("  build '%c' : ", op);      /* show the new subtree */
+    print_infix(node);
+    putchar('\\n');
+    return 1;
+}
+
+/* Build the expression tree from an infix string; NULL on error */
+static Node *build_tree(const char *expr) {
+    Stacks s;
+    int ok = 1;
+    size_t i;
+
+    s.tree_top = -1;
+    s.op_top = -1;
+    if (strlen(expr) >= MAX_EXPR) {     /* stacks hold MAX_EXPR items */
+        return NULL;
+    }
+    for (i = 0; ok && expr[i] != '\\0'; i++) {
+        char c = expr[i];
+        if (isalnum((unsigned char)c)) {
+            /* Operand: push a leaf node */
+            Node *leaf = new_node(c, NULL, NULL);
+            ok = (leaf != NULL);
+            s.tree[++s.tree_top] = leaf;
+        } else if (c == '(') {
+            s.op[++s.op_top] = c;
+        } else if (c == ')') {
+            /* Build subtrees until the matching '(' is on top */
+            while (ok && s.op_top >= 0 && s.op[s.op_top] != '(') {
+                ok = build_subtree(&s);
+            }
+            ok = ok && s.op_top >= 0;   /* error if there was no '(' */
+            s.op_top--;                 /* discard the '(' */
+        } else if (precedence(c) > 0) {
+            /* Operator: first apply stacked operators that go first */
+            while (ok && s.op_top >= 0 && apply_first(s.op[s.op_top], c)) {
+                ok = build_subtree(&s);
+            }
+            s.op[++s.op_top] = c;
+        } else if (c != ' ') {
+            ok = 0;                     /* unknown character */
+        }
+    }
+    /* End of input: apply every operator still waiting */
+    while (ok && s.op_top >= 0) {
+        if (s.op[s.op_top] == '(') {
+            ok = 0;                     /* '(' without ')' */
+        } else {
+            ok = build_subtree(&s);
+        }
+    }
+    if (ok && s.tree_top == 0) {
+        return s.tree[0];               /* the root of the whole tree */
+    }
+    while (s.tree_top >= 0) {           /* error: free partial trees */
+        free_tree(s.tree[s.tree_top--]);
+    }
+    return NULL;
+}
+
+int main(void) {
+    /* Expression 1 is the old sample: postfix "ab+c*" as infix */
+    const char *expr[NUM_EXPR] = {"(a+b)*c", "(a+b)*(c-d)/e", "8-3-2^3^2"};
+    int k;
+
+    printf("Experiment 7: Expression Tree -> Prefix and Postfix\\n");
+    printf("Precedence: ^ (right-assoc) > * / > + - (left-assoc)\\n");
+    printf("build = pop an operator, join the top two subtrees\\n");
+    printf("Expression 1 is the old postfix sample ab+c* as infix\\n\\n");
+
+    for (k = 0; k < NUM_EXPR; k++) {
+        Node *root;
+
+        printf("=== Expression %d (infix): %s ===\\n", k + 1, expr[k]);
+        root = build_tree(expr[k]);
+        if (root == NULL) {
+            printf("  invalid expression\\n\\n");
+            continue;
+        }
+        printf("Tree (root at left, right child above):\\n");
+        print_sideways(root, 0);
+        printf("Prefix  (preorder) :");
+        print_prefix(root);
+        printf("\\nPostfix (postorder):");
+        print_postfix(root);
+        printf("\\nInfix   (inorder)  : ");
+        print_infix(root);
+        printf("\\n\\n");
+        free_tree(root);                /* release every node */
+    }
+    printf("All trees freed.\\n");
     return 0;
 }`,
-    output: `[Expression Tree Traversal]
-Input Postfix : ab+c*
-Tree Root: '*'
-Left Subtree : '+' (children: 'a', 'b')
-Right Subtree: 'c'
-------------------------------------------------
-Prefix (Preorder)   : * + a b c
-Infix (Inorder)     : ((a+b)*c)
-Postfix (Postorder) : a b + c *`,
     demoType: "expression_tree",
     app: "SQL query optimization AST trees, Compilers (LLVM Intermediate Representation), Spreadsheet formula dependency engines."
   },
@@ -743,15 +1635,6 @@ int main() {
     if (res) printf("Found: %s => %s\\n", res->word, res->meaning);
     return 0;
 }`,
-    output: `[BST Dictionary Execution]
-Inserted: Queue, Array, Tree
-Searching for: 'Queue'
-Comparison 1: 'Queue' vs Root 'Queue' (Match found!)
-Meaning: FIFO data structure
-Inorder Alphabetical Listing:
-1. Array : Contiguous memory blocks
-2. Queue : FIFO data structure
-3. Tree  : Hierarchical non-linear structure`,
     demoType: "bst_dict",
     app: "Database indexing engines, Domain Name System (DNS) cache resolution, dictionary auto-complete libraries."
   },
@@ -838,14 +1721,6 @@ int main() {
     }
     return 0;
 }`,
-    output: `[Landmine Maze BFS Output - 4x4 Grid]
-Grid Legend: 'M'=Landmine, 'X'=Wall, 'O'=Path
-Shortest Safe Distances:
- 2  2  1  0
- 1 -1  2  1
- 0  1  2  2
- 1  2 -1  3
-(Note: -1 represents blocked obstacle cells)`,
     demoType: "maze_bfs",
     app: "Autonomous robot navigation and hazard clearance, wildfire evacuation routing, gaming AI non-player character (NPC) tactical movement."
   },
@@ -855,17 +1730,18 @@ Shortest Safe Distances:
     co: "CO1, CO2",
     level: "K4",
     category: "graphs",
-    problem: "Given three containers of capacities 10L, 7L, and 4L. Initially, 10L is empty, while 7L and 4L are full (state 0, 7, 4). Find the minimum sequence of pourings to leave exactly 2 litres in the 7L or 4L container using Breadth-First Search (BFS).",
+    problem: "Containers of 10L, 7L and 4L start at (0, 7, 4); a pour stops when the source is empty or the destination is full. Model states as graph vertices and pours as edges, and use BFS to find the shortest sequence of pours that leaves exactly 2L in the 7L or 4L container.",
     algo: [
-      "Represent each state as a 3-tuple (a, b, c) of current water levels.",
-      "Initialize queue with initial state (0, 7, 4).",
-      "Maintain a 3D visited boolean array visited[11][8][5] to prevent repeating state cycles.",
-      "While queue is not empty, dequeue current state (a, b, c):",
-      "  a. Check goal: If b == 2 or c == 2, target reached! Reconstruct and output pour path.",
-      "  b. Generate 6 possible pour operations: a->b, a->c, b->a, b->c, c->a, c->b.",
-      "  c. For each pour, transfer water until source is empty or destination reaches capacity.",
-      "  d. If resulting state is unvisited, mark visited and enqueue with pointer to parent state.",
-      "Output optimal sequence of pours."
+      "Represent each state as (a, b, c) = litres in the 10L, 7L and 4L containers; each state is a graph vertex.",
+      "Each pour i -> j (6 ordered pairs) is an edge; it moves min(water in i, free space in j).",
+      "Map each state to an array index; keep visited[], parent[], depth[] and the pour that reached each state.",
+      "Mark the start state (0, 7, 4) visited and enqueue it.",
+      "While the queue is not empty, dequeue a state s:",
+      "  a. If b == 2 or c == 2, the goal is reached: stop.",
+      "  b. Apply all 6 pours to s to get its neighbouring states.",
+      "  c. For each unvisited neighbour, mark it visited, set parent = s and depth = depth(s) + 1, and enqueue it.",
+      "Follow parent[] back from the goal to the start and print the pours in forward order.",
+      "BFS visits states in order of the number of pours, so this sequence is a shortest one (6 moves here)."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -887,53 +1763,176 @@ Shortest Safe Distances:
       <rect x="180" y="380" width="140" height="30" rx="15" fill="#a855f7"/>
       <text x="250" y="400" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">GOAL REACHED</text>
     </svg>`,
-    code: `#include <stdio.h>
+    code: `/*
+ * Experiment 10: Water Jug Problem (10L, 7L, 4L) as a Graph - BFS
+ * Syllabus task: the 7L and 4L containers start full, the 10L one is
+ * empty; a pour stops when the source is empty or the destination is
+ * full. Find pourings that leave exactly 2L in the 7L or 4L container.
+ *
+ * How it works:
+ *   Every state (a, b, c) = litres in the 10L, 7L and 4L containers is
+ *   a vertex. Every pour i -> j (6 ordered pairs) is a directed edge.
+ *   Breadth-first search from (0, 7, 4) visits states in order of the
+ *   number of pours, so the first goal state taken from the queue is
+ *   reached by a shortest sequence. parent[] lets us walk back from the
+ *   goal to the start to print that sequence.
+ */
+#include <stdio.h>
 
-struct State { int a, b, c; int parent; };
-struct State Q[500];
-int head = 0, tail = 0;
-int visited[11][8][5] = {0};
+#define NJUGS 3
+#define CAP_A 10                        /* the three capacities */
+#define CAP_B 7
+#define CAP_C 4
+#define MAX_STATES ((CAP_A + 1) * (CAP_B + 1) * (CAP_C + 1))
+#define TARGET 2                        /* litres wanted in 7L or 4L */
+#define PER_LINE 5                      /* states per output line */
 
-void enqueue(int a, int b, int c, int p) {
-    if (!visited[a][b][c]) {
-        visited[a][b][c] = 1;
-        Q[tail++] = (struct State){a, b, c, p};
+typedef struct {
+    int w[NJUGS];                       /* water in 10L, 7L, 4L */
+} State;
+
+static const int cap[NJUGS] = {CAP_A, CAP_B, CAP_C};
+static const char *name[NJUGS] = {"10L", "7L", "4L"};
+
+static int visited[MAX_STATES];         /* 1 once a state is queued */
+static int parent[MAX_STATES];          /* previous state on the path */
+static int depth[MAX_STATES];           /* number of pours from start */
+static int pour_src[MAX_STATES];        /* pour that reached the state */
+static int pour_dst[MAX_STATES];
+static int queue[MAX_STATES];           /* BFS queue of state ids */
+
+/* Map a state to a unique index 0 .. MAX_STATES-1 */
+static int encode(State s) {
+    return (s.w[0] * (CAP_B + 1) + s.w[1]) * (CAP_C + 1) + s.w[2];
+}
+
+/* Inverse of encode() */
+static State decode(int id) {
+    State s;
+    s.w[2] = id % (CAP_C + 1);
+    s.w[1] = (id / (CAP_C + 1)) % (CAP_B + 1);
+    s.w[0] = id / ((CAP_C + 1) * (CAP_B + 1));
+    return s;
+}
+
+/* Pour jug i into jug j until i is empty or j is full */
+static State pour(State s, int i, int j) {
+    int space = cap[j] - s.w[j];
+    int amount = (s.w[i] < space) ? s.w[i] : space;
+    s.w[i] -= amount;
+    s.w[j] += amount;
+    return s;
+}
+
+/* Goal test: exactly 2L in the 7L or the 4L container */
+static int is_goal(State s) {
+    return s.w[1] == TARGET || s.w[2] == TARGET;
+}
+
+/* Print one dequeued state, grouped by BFS level (depth) */
+static void show_state(int id, int *level, int *count) {
+    State s = decode(id);
+    if (depth[id] != *level) {          /* first state of a new level */
+        *level = depth[id];
+        *count = 0;
+        printf("%sDepth %2d:", (*level > 0) ? "\\n" : "", *level);
+    } else if (*count % PER_LINE == 0) {
+        printf("\\n%9s", "");            /* wrap a long level */
+    }
+    printf(" (%d,%d,%d)", s.w[0], s.w[1], s.w[2]);
+    (*count)++;
+}
+
+/* BFS from start; returns the goal id (or -1), sets *explored */
+static int bfs(State start, int *explored) {
+    int head = 0, tail = 0, level = -1, count = 0;
+    int id = encode(start);
+
+    visited[id] = 1;
+    parent[id] = -1;
+    depth[id] = 0;
+    queue[tail++] = id;
+    while (head < tail) {
+        int cur = queue[head++];        /* dequeue */
+        State s = decode(cur);
+        int i, j;
+
+        show_state(cur, &level, &count);
+        if (is_goal(s)) {
+            *explored = head;
+            printf("\\n");
+            return cur;
+        }
+        for (i = 0; i < NJUGS; i++) {   /* the 6 edges i -> j */
+            for (j = 0; j < NJUGS; j++) {
+                int next;
+                if (i == j) {
+                    continue;
+                }
+                next = encode(pour(s, i, j));
+                if (!visited[next]) {   /* new state: record and queue */
+                    visited[next] = 1;
+                    parent[next] = cur;
+                    depth[next] = depth[cur] + 1;
+                    pour_src[next] = i;
+                    pour_dst[next] = j;
+                    queue[tail++] = next;
+                }
+            }
+        }
+    }
+    *explored = head;
+    printf("\\n");
+    return -1;
+}
+
+/* Walk parent[] back from the goal and print the pours in order */
+static void print_path(int goal) {
+    int path[MAX_STATES];
+    int n = 0, k;
+    char move[20];
+
+    for (k = goal; k != -1; k = parent[k]) {
+        path[n++] = k;
+    }
+    for (k = n - 1; k >= 0; k--) {
+        State s = decode(path[k]);
+        if (k == n - 1) {
+            printf("Start : state (%d, %d, %d)\\n", s.w[0], s.w[1], s.w[2]);
+            continue;
+        }
+        snprintf(move, sizeof move, "Pour %s -> %s",
+                 name[pour_src[path[k]]], name[pour_dst[path[k]]]);
+        printf("Step %d: %-14s   state (%d, %d, %d)\\n",
+               n - 1 - k, move, s.w[0], s.w[1], s.w[2]);
     }
 }
 
-int main() {
-    enqueue(0, 7, 4, -1);
-    while (head < tail) {
-        struct State s = Q[head];
-        if (s.b == 2 || s.c == 2) {
-            printf("Target Reached! Jugs: (%d, %d, %d)\\n", s.a, s.b, s.c);
-            break;
-        }
-        // Pour 7L -> 10L
-        int pour = (s.b < 10 - s.a) ? s.b : 10 - s.a;
-        enqueue(s.a + pour, s.b - pour, s.c, head);
-        // Pour 4L -> 10L
-        pour = (s.c < 10 - s.a) ? s.c : 10 - s.a;
-        enqueue(s.a + pour, s.b, s.c - pour, head);
-        // Pour 7L -> 4L
-        pour = (s.b < 4 - s.c) ? s.b : 4 - s.c;
-        enqueue(s.a, s.b - pour, s.c + pour, head);
-        head++;
+int main(void) {
+    State start = {{0, CAP_B, CAP_C}};  /* 10L empty, 7L and 4L full */
+    int goal, explored = 0;
+
+    printf("Experiment 10: Water Jug (10L, 7L, 4L) as a Graph, BFS\\n");
+    printf("Vertices: states (a, b, c) = litres in 10L, 7L, 4L\\n");
+    printf("Edges   : 6 pours i -> j, moving min(water in i, space in j)\\n");
+    printf("Start (0, 7, 4)   Goal: b == 2 or c == 2\\n\\n");
+
+    printf("BFS order of states taken from the queue:\\n");
+    goal = bfs(start, &explored);
+    if (goal < 0) {
+        printf("No sequence of pours reaches the goal.\\n");
+        return 0;
     }
+    printf("\\nGoal found after visiting %d states.\\n\\n", explored);
+
+    printf("Shortest sequence of pours:\\n");
+    print_path(goal);
+    printf("GOAL: exactly 2L in the %s container!\\n",
+           (decode(goal).w[1] == TARGET) ? "7L" : "4L");
+    printf("Total moves: %d\\n", depth[goal]);
+    printf("BFS explores level by level, so no shorter sequence exists.\\n");
     return 0;
 }`,
-    output: `[Water Jug 10L-7L-4L BFS Solver]
-Initial State: 10L: 0L | 7L: 7L | 4L: 4L
-Step 1: Pour 7L -> 10L => (7, 0, 4)
-Step 2: Pour 4L -> 7L  => (7, 4, 0)
-Step 3: Pour 10L -> 4L => (3, 4, 4)
-Step 4: Pour 4L -> 7L  => (3, 7, 1) [7L becomes full]
-Step 5: Pour 7L -> 10L => (10, 0, 1)
-Step 6: Pour 4L -> 7L  => (10, 1, 0)
-Step 7: Pour 10L -> 4L => (6, 1, 4)
-Step 8: Pour 4L -> 7L  => (6, 5, 0)
-Step 9: Pour 10L -> 4L => (2, 5, 4)
-Step 10: Pour 4L -> 7L => (2, 7, 2) Target: Exactly 2L in 4L jug!`,
     demoType: "water_jug",
     app: "Automated chemical liquid transfer systems, mission critical state-space planning in robotics, game puzzle solvers."
   },
@@ -1006,12 +2005,6 @@ int main() {
     printf("Replaced: %s\\n", result);
     return 0;
 }`,
-    output: `[Find & Replace Execution]
-Original: Data structures in C are easy and C is fast.
-Target Keyword     : 'C'
-Replacement String : 'Python'
-Replaced: Data structures in Python are easy and Python is fast.
-All occurrences matched and substituted cleanly.`,
     demoType: "find_replace",
     app: "VS Code text editor Find & Replace buffer, web browser search on page (Ctrl+F), DNA genome sequence motif substitution."
   },
@@ -1075,15 +2068,6 @@ int main() {
     printf("Item %d found at index %d in %d comparison steps!\\n", key, idx, steps);
     return 0;
 }`,
-    output: `[Binary Search vs Linear Search]
-Sorted Array of 14 Items:
-[2, 7, 11, 15, 23, 29, 35, 42, 51, 63, 72, 88, 91, 99]
-Target Key: 72
-
-Linear Search Steps  : 11 steps O(n)
-Binary Search Steps  : 3 steps O(log n)!
-  Step 1: mid index 6 (35) < 72 -> low moves to 7
-  Step 2: mid index 10 (72) == 72 -> MATCH FOUND!`,
     demoType: "binary_search",
     app: "Database B-Tree page lookups, Git bisect commit debugging, operating system memory address table lookups."
   },
@@ -1093,14 +2077,19 @@ Binary Search Steps  : 3 steps O(log n)!
     co: "CO2, CO3",
     level: "K4",
     category: "sorting",
-    problem: "Implement Bubble Sort, Insertion Sort, Radix Sort, Quick Sort, and Merge Sort, comparing the number of comparison and assignment steps involved across algorithms.",
+    problem: "Implement Bubble sort, Insertion sort, Radix sort, Quick sort and Merge sort, run each on its own copy of the same array, and compare the number of steps (key comparisons + element moves) on sample, already sorted and reverse sorted input.",
     algo: [
-      "Bubble Sort: Pairwise adjacent swaps in O(n^2) comparisons.",
-      "Insertion Sort: Insert each item into sorted left subarray in O(n^2) worst case.",
-      "Radix Sort: Non-comparative digit-by-digit distribution using counting sort in O(d * (n + k)).",
-      "Quick Sort: Divide and conquer around pivot element via partition index in O(n log n) average.",
-      "Merge Sort: Divide into halves, sort recursively, and merge sorted halves in O(n log n) guaranteed.",
-      "Track step counters for comparisons and data moves for each algorithm."
+      "Define steps: comparison = one test between two keys; move = one element assignment (swap = 3, shift or temp-array copy = 1).",
+      "Bubble Sort: compare adjacent pairs and swap if out of order; stop early when a pass makes no swap.",
+      "Insertion Sort: save a[i] as key, shift larger keys one place right, place the key in the gap.",
+      "Radix Sort (LSD, base 10): find the max to know the digit count, then for each digit place:",
+      "  a. Count each digit, form prefix sums, copy keys right to left into an output array (stable).",
+      "  b. Copy the output array back.",
+      "Quick Sort (Lomuto): pivot = last element; swap smaller keys to the left, put the pivot in place, recurse on both sides.",
+      "Merge Sort (top-down): split at mid, sort both halves recursively, merge them through a temp array.",
+      "For each input, give every sort its own copy and a fresh step counter.",
+      "Check that all five results are sorted and identical.",
+      "Print comparisons, moves and total steps for sample, sorted and reverse sorted input."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -1121,36 +2110,271 @@ Binary Search Steps  : 3 steps O(log n)!
       <rect x="180" y="385" width="140" height="30" rx="15" fill="#a855f7"/>
       <text x="250" y="405" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">END</text>
     </svg>`,
-    code: `#include <stdio.h>
+    code: `/*
+ * Experiment 13: Sorting Benchmark (Bubble, Insertion, Radix, Quick, Merge)
+ * Syllabus task: Implement Bubble sort, Insertion sort, Radix sort,
+ * Quick sort and Merge sort and compare the number of steps involved.
+ *
+ * How it works: each sort gets its own copy of the same input and its
+ * own Steps counter. Steps = key comparisons + element moves, where a
+ * comparison is one test between two keys (counted in isGreater) and a
+ * move is one element assignment (swap = 3, shift or temp copy = 1).
+ * Radix sort compares keys only to find the max (n-1 tests); its digit
+ * tallies in count[] are not counted. Quick sort uses Lomuto partition
+ * (pivot = last element). Cases: sample, already sorted, reversed.
+ */
+#include <stdio.h>
+#include <string.h>
 
-void bubbleSort(int a[], int n, int *steps) {
-    *steps = 0;
-    for (int i = 0; i < n-1; i++) {
-        for (int j = 0; j < n-i-1; j++) {
-            (*steps)++;
-            if (a[j] > a[j+1]) {
-                int t = a[j]; a[j] = a[j+1]; a[j+1] = t;
+#define MAX_N     16   /* largest array this program handles */
+#define NUM_SORTS 5    /* number of algorithms compared */
+#define BASE      10   /* radix sort base: decimal digits */
+
+/* Shared step counter used by every sort */
+typedef struct {
+    long comps;   /* key comparisons */
+    long moves;   /* element assignments */
+} Steps;
+
+/* Compare two keys and count it: returns 1 if x > y */
+static int isGreater(int x, int y, Steps *s) {
+    s->comps++;
+    return x > y;
+}
+
+/* Swap two elements: three assignments = 3 moves */
+static void swap(int *x, int *y, Steps *s) {
+    int t = *x;
+    *x = *y;
+    *y = t;
+    s->moves += 3;
+}
+
+/* 1. Bubble sort: swap adjacent pairs; stop when a pass has no swap */
+static void bubbleSort(int a[], int n, Steps *s) {
+    for (int pass = 0; pass < n - 1; pass++) {
+        int swapped = 0;
+        /* each pass carries the largest remaining key to the end */
+        for (int j = 0; j < n - 1 - pass; j++) {
+            if (isGreater(a[j], a[j + 1], s)) {
+                swap(&a[j], &a[j + 1], s);
+                swapped = 1;
             }
+        }
+        if (!swapped) {   /* early exit: array is already sorted */
+            break;
         }
     }
 }
 
-int main() {
-    int a[] = {64, 34, 25, 12, 22, 11, 90};
-    int n = sizeof(a)/sizeof(a[0]);
-    int steps = 0;
-    bubbleSort(a, n, &steps);
-    printf("Bubble Sort steps: %d for n=%d\\n", steps, n);
+/* 2. Insertion sort: shift larger keys right, drop key in the gap */
+static void insertionSort(int a[], int n, Steps *s) {
+    for (int i = 1; i < n; i++) {
+        int key = a[i];   /* save the key: 1 move */
+        int j = i - 1;
+        s->moves++;
+        while (j >= 0 && isGreater(a[j], key, s)) {
+            a[j + 1] = a[j];   /* shift one place right: 1 move */
+            s->moves++;
+            j--;
+        }
+        a[j + 1] = key;   /* place the key: 1 move */
+        s->moves++;
+    }
+}
+
+/* Stable counting sort of a[] on the digit at place value exp */
+static void countingSortByDigit(int a[], int n, int exp, Steps *s) {
+    int output[MAX_N] = {0};
+    int count[BASE] = {0};
+    for (int i = 0; i < n; i++) {   /* how many keys have each digit */
+        count[(a[i] / exp) % BASE]++;
+    }
+    for (int d = 1; d < BASE; d++) {   /* count[d] = end slot for d */
+        count[d] += count[d - 1];
+    }
+    for (int i = n - 1; i >= 0; i--) {   /* right to left: stable */
+        int d = (a[i] / exp) % BASE;
+        count[d]--;
+        output[count[d]] = a[i];   /* copy into temp array: 1 move */
+        s->moves++;
+    }
+    for (int i = 0; i < n; i++) {   /* copy back: 1 move each */
+        a[i] = output[i];
+        s->moves++;
+    }
+}
+
+/* 3. LSD radix sort, base 10, for non-negative integers */
+static void radixSort(int a[], int n, Steps *s) {
+    int max = a[0];
+    for (int i = 1; i < n; i++) {   /* the max decides how many digits */
+        if (isGreater(a[i], max, s)) {
+            max = a[i];
+        }
+    }
+    for (int exp = 1; max / exp > 0; exp *= BASE) {   /* 1s, 10s, ... */
+        countingSortByDigit(a, n, exp, s);
+    }
+}
+
+/* Lomuto partition of a[low..high]; returns the pivot's final index */
+static int partition(int a[], int low, int high, Steps *s) {
+    int pivot = a[high];   /* pivot value is only read, not moved */
+    int i = low - 1;       /* a[low..i] holds keys smaller than pivot */
+    for (int j = low; j < high; j++) {
+        if (isGreater(pivot, a[j], s)) {   /* a[j] < pivot */
+            i++;
+            swap(&a[i], &a[j], s);
+        }
+    }
+    swap(&a[i + 1], &a[high], s);   /* put the pivot in its place */
+    return i + 1;
+}
+
+/* Quick sort a[low..high] recursively */
+static void quickSortRange(int a[], int low, int high, Steps *s) {
+    if (low < high) {
+        int p = partition(a, low, high, s);
+        quickSortRange(a, low, p - 1, s);
+        quickSortRange(a, p + 1, high, s);
+    }
+}
+
+/* 4. Quick sort (Lomuto partition, last element as pivot) */
+static void quickSort(int a[], int n, Steps *s) {
+    quickSortRange(a, 0, n - 1, s);
+}
+
+/* Merge sorted runs a[low..mid] and a[mid+1..high] through temp[] */
+static void merge(int a[], int low, int mid, int high, Steps *s) {
+    int temp[MAX_N] = {0};
+    int i = low, j = mid + 1, k = 0;
+    while (i <= mid && j <= high) {   /* take the smaller head key */
+        if (isGreater(a[i], a[j], s)) {
+            temp[k++] = a[j++];
+        } else {
+            temp[k++] = a[i++];   /* ties take the left key: stable */
+        }
+        s->moves++;
+    }
+    while (i <= mid) {   /* copy what is left of either run */
+        temp[k++] = a[i++];
+        s->moves++;
+    }
+    while (j <= high) {
+        temp[k++] = a[j++];
+        s->moves++;
+    }
+    for (k = 0; k < high - low + 1; k++) {   /* copy back */
+        a[low + k] = temp[k];
+        s->moves++;
+    }
+}
+
+/* Merge sort a[low..high]: sort both halves, then merge them */
+static void mergeSortRange(int a[], int low, int high, Steps *s) {
+    if (low < high) {
+        int mid = low + (high - low) / 2;
+        mergeSortRange(a, low, mid, s);
+        mergeSortRange(a, mid + 1, high, s);
+        merge(a, low, mid, high, s);
+    }
+}
+
+/* 5. Merge sort (top-down) */
+static void mergeSort(int a[], int n, Steps *s) {
+    mergeSortRange(a, 0, n - 1, s);
+}
+
+/* Table of the five algorithms, all with the same signature */
+typedef void (*SortFn)(int a[], int n, Steps *s);
+
+static const char *const sortNames[NUM_SORTS] = {
+    "Bubble (early exit)", "Insertion (shifting)", "Radix (LSD, base 10)",
+    "Quick (Lomuto)", "Merge (top-down)"
+};
+static const SortFn sortFns[NUM_SORTS] = {
+    bubbleSort, insertionSort, radixSort, quickSort, mergeSort
+};
+
+/* Print a label followed by the array */
+static void printArray(const char *label, const int a[], int n) {
+    printf("%s", label);
+    for (int i = 0; i < n; i++) {
+        printf(" %d", a[i]);
+    }
+    printf("\\n");
+}
+
+/* Return 1 if every result is sorted and equal to the first one */
+static int allMatch(int result[][MAX_N], int n) {
+    for (int k = 0; k < NUM_SORTS; k++) {
+        for (int i = 0; i < n; i++) {
+            /* out of ascending order, or differs from the first result */
+            if ((i > 0 && result[k][i - 1] > result[k][i]) ||
+                result[k][i] != result[0][i]) {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
+/* Sort copies of input[] with all five algorithms; print a table */
+static void runCase(const char *title, const int input[], int n) {
+    int result[NUM_SORTS][MAX_N];
+    Steps steps[NUM_SORTS];
+
+    printf("\\n%s (n = %d)\\n", title, n);
+    printArray("Input :", input, n);
+    for (int k = 0; k < NUM_SORTS; k++) {
+        memcpy(result[k], input, (size_t)n * sizeof(int));   /* own copy */
+        steps[k].comps = 0;
+        steps[k].moves = 0;
+        sortFns[k](result[k], n, &steps[k]);
+    }
+    printArray("Sorted:", result[0], n);
+    printf("%s\\n", allMatch(result, n) ? "All five results match"
+                                       : "ERROR: results differ");
+
+    printf("%-22s%12s%8s%13s\\n", "Algorithm", "Comparisons", "Moves",
+           "Total steps");
+    printf("-------------------------------------------------------\\n");
+    for (int k = 0; k < NUM_SORTS; k++) {
+        printf("%-22s%12ld%8ld%13ld\\n", sortNames[k], steps[k].comps,
+               steps[k].moves, steps[k].comps + steps[k].moves);
+    }
+}
+
+int main(void) {
+    const int sample[]   = {64, 34, 25, 12, 22, 11, 90};
+    const int sorted[]   = {11, 12, 22, 25, 34, 64, 90};
+    const int reversed[] = {90, 64, 34, 25, 22, 12, 11};
+    const int n = (int)(sizeof(sample) / sizeof(sample[0]));
+
+    printf("Experiment 13: Sorting Benchmark\\n");
+    printf("Bubble, Insertion, Radix, Quick and Merge sort\\n");
+    printf("=======================================================\\n");
+    printf("How steps are counted (same rules for every sort):\\n");
+    printf("  comparison  = one test between two keys, e.g. a[j] > a[j+1]\\n");
+    printf("  move        = one element assignment: swap = 3 moves,\\n");
+    printf("                shift = 1, copy to/from a temp array = 1\\n");
+    printf("  total steps = comparisons + moves\\n");
+    printf("  radix       = n-1 comparisons (find max) + 2n moves per pass\\n");
+
+    runCase("Case 1: sample data", sample, n);
+    runCase("Case 2: already sorted", sorted, n);
+    runCase("Case 3: reverse sorted", reversed, n);
+
+    printf("\\nObservations:\\n");
+    printf("- Bubble and insertion: fewest steps on sorted input, most\\n");
+    printf("  on reverse input (every pair is out of order).\\n");
+    printf("- Quick sort with a last-element pivot is worst on sorted\\n");
+    printf("  input: each partition removes only the pivot.\\n");
+    printf("- Radix and merge moves do not depend on the input order.\\n");
     return 0;
 }`,
-    output: `[Sorting Algorithms Empirical Comparison - N = 100]
-Algorithm       Best        Average     Worst       Steps (N=100)
------------------------------------------------------------------
-Bubble Sort     O(n)        O(n^2)      O(n^2)      4,950 steps
-Insertion Sort  O(n)        O(n^2)      O(n^2)      2,475 steps
-Quick Sort      O(n log n)  O(n log n)  O(n^2)        680 steps
-Merge Sort      O(n log n)  O(n log n)  O(n log n)    672 steps
-Radix Sort      O(nk)       O(nk)       O(nk)         300 steps (linear!)`,
     demoType: "sorting_suite",
     app: "E-commerce product price filtering, database external sort merge for millions of rows, trading orderbook matching."
   },
@@ -1223,18 +2447,6 @@ int main() {
     }
     return 0;
 }`,
-    output: `[Post Office Priority Queue Execution]
-Arrival Order:
-1. Token 101: Rahul (Normal, Prio 1)
-2. Token 102: Major Roy (Defence, Prio 2)
-3. Token 103: Mary (Diff. Abled, Prio 4)
-4. Token 104: Joseph (Senior, Prio 3)
-
-Service Sequence:
-Serving Token 103: Mary (Diff. Abled) [Priority 4]
-Serving Token 104: Joseph (Senior) [Priority 3]
-Serving Token 102: Major Roy (Defence) [Priority 2]
-Serving Token 101: Rahul (Normal) [Priority 1]`,
     demoType: "post_office_pq",
     app: "Hospital Emergency Room (ER) triage scheduling, Airport priority boarding, Operating System process scheduling with nice priorities."
   },
@@ -1306,12 +2518,6 @@ int main() {
     else printf("'%s' is MISSPELLED. Did you mean: 'algorithm'?\\n", test);
     return 0;
 }`,
-    output: `[Hash Table Spell Checker]
-Dictionary Loaded: algorithm, structure, binary, queue, stack
-Testing word: 'algoritm'
-Status: MISSPELLED (Not found in hash table in O(1) time)
-Analyzing Levenshtein 1-Edit suggestions...
-Suggestion 1: Insert 'h' at pos 7 -> "algorithm" (FOUND IN DICTIONARY!)`,
     demoType: "spell_checker",
     app: "Google Search 'Did you mean?' query corrector, Microsoft Word spell checker, IDE code linter symbol suggest."
   },
@@ -1321,19 +2527,20 @@ Suggestion 1: Insert 'h' at pos 7 -> "algorithm" (FOUND IN DICTIONARY!)`,
     co: "CO1, CO4",
     level: "K4",
     category: "memory",
-    problem: "Simulate a dynamic memory manager (malloc / free) using a Doubly Linked List free-list with First-Fit allocation, block splitting, and bidirectional free block coalescing.",
+    problem: "Simulate a 1024-byte heap as a doubly linked list of block descriptors: allocate with first fit and block splitting, free with coalescing of free neighbours, and reclaim unreachable blocks with a mark-and-sweep garbage collector driven by a root set.",
     algo: [
-      "Define Block header with size, isFree flag, and *prev, *next pointers.",
-      "Initialize contiguous memory pool (e.g. 1024 bytes).",
-      "my_malloc(reqSize):",
-      "  a. Traverse free-list using First-Fit for block where isFree == 1 and size >= reqSize.",
-      "  b. If block size > reqSize + HEADER_SIZE, split block into allocated chunk and smaller free chunk.",
-      "  c. Mark block isFree = 0 and return memory pointer.",
-      "my_free(ptr):",
-      "  a. Mark block isFree = 1.",
-      "  b. If next block is free, coalesce (merge size and remove next node).",
-      "  c. If prev block is free, coalesce with prev block.",
-      "Display memory heap map."
+      "Define Block with start, size, isFree, marked, id and *prev, *next pointers.",
+      "Initialize the heap as one free block [0-1023] of HEAP_SIZE = 1024 bytes.",
+      "myMalloc(size):",
+      "  a. First fit: walk the list to the first block with isFree == 1 and size >= request.",
+      "  b. If none is found, print Out of memory and return -1.",
+      "  c. If the block is bigger, split it: insert a new free node for the rest after it (fix prev/next links).",
+      "  d. Mark the block used, give it a new id and return the id.",
+      "myFree(id): mark the block free; if next is free, absorb it; if prev is free, prev absorbs the block; free the merged descriptors.",
+      "Root set: array of ids the program still references (blocks whose pointer is lost are garbage).",
+      "gc() Mark: clear all marks, then mark every allocated block whose id is in the root set.",
+      "gc() Sweep: free every allocated block left unmarked (coalescing as above) and print the bytes reclaimed.",
+      "printHeap(): print each block [start-end] size USED/FREE and the used/free totals, free block count and largest free block."
     ],
     flowchart: `<svg class="flowchart-svg" viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg">
       <rect x="180" y="20" width="140" height="40" rx="20" fill="#38bdf8"/>
@@ -1358,38 +2565,260 @@ Suggestion 1: Insert 'h' at pos 7 -> "algorithm" (FOUND IN DICTIONARY!)`,
       <rect x="180" y="390" width="140" height="25" rx="12" fill="#a855f7"/>
       <text x="250" y="407" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">END</text>
     </svg>`,
-    code: `#include <stdio.h>
+    code: `/*
+ * Experiment 16: Memory Allocator and Garbage Collector Simulation
+ * Syllabus task: Simulation of a basic memory allocator and garbage
+ * collector using doubly linked list.
+ *
+ * How it works: a simulated heap of HEAP_SIZE bytes is described by a
+ * doubly linked list of block descriptors (start, size, free flag).
+ *  - myMalloc(): FIRST FIT; SPLIT a bigger free block into a used part
+ *    and a smaller free part.
+ *  - myFree(): mark the block free and COALESCE it with free
+ *    neighbours on both sides (prev and next).
+ *  - gc(): MARK AND SWEEP. Mark the blocks named in the root set, then
+ *    free (and coalesce) every allocated block left unmarked.
+ */
+#include <stdio.h>
+#include <stdlib.h>
 
+#define HEAP_SIZE 1024   /* size of the simulated heap in bytes */
+#define MAX_ROOTS 8      /* capacity of the root set */
+#define BIG_REQUEST 500  /* request used to show fragmentation */
+
+/* One descriptor per block of the heap (used or free) */
 struct Block {
-    int size;
-    int isFree;
+    int start;     /* offset of the first byte in the heap */
+    int size;      /* size of the block in bytes */
+    int isFree;    /* 1 = free, 0 = allocated */
+    int marked;    /* mark bit used by the garbage collector */
+    int id;        /* id of an allocated block (0 when free) */
     struct Block *prev, *next;
 };
 
-struct Block pool = {1024, 1, NULL, NULL};
+static struct Block *heap = NULL;  /* first block (lowest offset) */
+static int nextId = 1;             /* id given to the next allocation */
 
-void my_malloc(int size) {
-    struct Block *curr = &pool;
-    while (curr && (!curr->isFree || curr->size < size)) curr = curr->next;
-    if (!curr) { printf("Out of Memory!\\n"); return; }
-    curr->isFree = 0;
-    printf("Allocated %d bytes from block of size %d\\n", size, curr->size);
+/* Create a FREE block descriptor; returns NULL if malloc fails */
+static struct Block *newBlock(int start, int size) {
+    struct Block *b = malloc(sizeof *b);
+    if (b == NULL) {
+        printf("Error: malloc failed\\n");
+        return NULL;
+    }
+    /* fields not named here start as 0 / NULL */
+    *b = (struct Block){ .start = start, .size = size, .isFree = 1 };
+    return b;
 }
 
-int main() {
-    printf("Total Heap: %d Bytes\\n", pool.size);
-    my_malloc(128);
-    my_malloc(256);
+/* Offset of the last byte of a block */
+static int lastByte(const struct Block *b) {
+    return b->start + b->size - 1;
+}
+
+/* Find the allocated block with the given id (NULL if none) */
+static struct Block *findBlock(int id) {
+    struct Block *b;
+    for (b = heap; b != NULL; b = b->next) {
+        if (!b->isFree && b->id == id) return b;
+    }
+    return NULL;
+}
+
+/* Total free bytes, number of free blocks and largest free block */
+static void freeStats(int *total, int *count, int *largest) {
+    struct Block *b;
+    *total = *count = *largest = 0;
+    for (b = heap; b != NULL; b = b->next) {
+        if (!b->isFree) continue;
+        *total += b->size;
+        (*count)++;
+        if (b->size > *largest) *largest = b->size;
+    }
+}
+
+/* Heap map: one line per block, then a used/free summary */
+static void printHeap(void) {
+    struct Block *b;
+    int total, count, largest;
+    for (b = heap; b != NULL; b = b->next) {
+        printf("  [%4d-%4d] %4d B  %s", b->start, lastByte(b), b->size,
+               b->isFree ? "FREE" : "USED");
+        if (!b->isFree) printf("  id=%d", b->id);
+        printf("\\n");
+    }
+    freeStats(&total, &count, &largest);
+    printf("  Used %d B, Free %d B, free blocks %d, largest %d B\\n",
+           HEAP_SIZE - total, total, count, largest);
+}
+
+/* First-fit allocation with splitting; returns block id or -1 */
+static int myMalloc(int size) {
+    struct Block *b = heap, *rest;
+    int left;
+
+    /* 1. First fit: walk the list to the first free block >= size */
+    while (b != NULL && !(b->isFree && b->size >= size)) b = b->next;
+    if (size <= 0 || b == NULL) {
+        printf("myMalloc(%d): Out of memory (no free block >= %d B)\\n",
+               size, size);
+        return -1;
+    }
+
+    /* 2. Split: the unused tail becomes a new free block after b */
+    left = b->size - size;
+    if (left > 0) {
+        rest = newBlock(b->start + size, left);
+        if (rest == NULL) return -1;
+        rest->prev = b;                /* b <-> rest <-> old b->next */
+        rest->next = b->next;
+        if (b->next != NULL) b->next->prev = rest;
+        b->next = rest;
+        b->size = size;
+    }
+
+    /* 3. Mark the block allocated and give it an id */
+    b->isFree = 0;
+    b->id = nextId++;
+    printf("myMalloc(%d): id%d at [%d-%d]", size, b->id, b->start,
+           lastByte(b));
+    if (left > 0) printf(", split leaves %d B free", left);
+    printf("\\n");
+    return b->id;
+}
+
+/* Free block b and coalesce it with free neighbours (prev, next).
+   Returns the resulting (possibly merged) free block. */
+static struct Block *releaseBlock(struct Block *b) {
+    struct Block *n = b->next, *p = b->prev;
+    const char *how = "no free neighbour";
+    int mergedNext = 0;
+
+    b->isFree = 1;
+    b->id = 0;
+    /* a. Next block free: b absorbs it, unlink and free its node */
+    if (n != NULL && n->isFree) {
+        b->size += n->size;
+        b->next = n->next;
+        if (n->next != NULL) n->next->prev = b;
+        free(n);
+        mergedNext = 1;
+        how = "merged with next";
+    }
+    /* b. Prev block free: prev absorbs b, unlink and free b's node */
+    if (p != NULL && p->isFree) {
+        p->size += b->size;
+        p->next = b->next;
+        if (b->next != NULL) b->next->prev = p;
+        free(b);
+        b = p;
+        how = mergedNext ? "merged with prev + next" : "merged with prev";
+    }
+    printf("    %s -> FREE [%d-%d] %d B\\n", how, b->start, lastByte(b),
+           b->size);
+    return b;
+}
+
+/* Explicit free by id */
+static void myFree(int id) {
+    struct Block *b = findBlock(id);
+    if (b == NULL) {
+        printf("myFree(%d): no such allocated block\\n", id);
+        return;
+    }
+    printf("myFree(%d): release [%d-%d] %d B\\n", id, b->start,
+           lastByte(b), b->size);
+    releaseBlock(b);
+}
+
+/* Mark-and-sweep garbage collector; roots[] = ids still in use */
+static void gc(const int roots[], int numRoots) {
+    struct Block *b;
+    int i, reclaimed = 0;
+
+    /* 1. Clear every mark bit */
+    for (b = heap; b != NULL; b = b->next) b->marked = 0;
+
+    /* 2. Mark: every allocated block named in the root set */
+    for (i = 0; i < numRoots; i++) {
+        b = findBlock(roots[i]);
+        if (b == NULL) continue;
+        b->marked = 1;
+        printf("mark : id%d is in the root set -> marked\\n", b->id);
+    }
+
+    /* 3. Sweep: free every allocated block that is still unmarked */
+    for (b = heap; b != NULL; b = b->next) {
+        if (!b->isFree && !b->marked) {
+            printf("sweep: id%d unmarked -> reclaim %d B\\n", b->id,
+                   b->size);
+            reclaimed += b->size;
+            b = releaseBlock(b);   /* coalesces as it goes */
+        }
+    }
+    printf("gc(): %d bytes reclaimed\\n", reclaimed);
+}
+
+/* Free every block descriptor of the heap list */
+static void freeHeap(void) {
+    int count = 0;
+    while (heap != NULL) {
+        struct Block *next = heap->next;
+        free(heap);
+        heap = next;
+        count++;
+    }
+    printf("Freed %d block descriptor(s). Done.\\n", count);
+}
+
+int main(void) {
+    int roots[MAX_ROOTS];              /* root set of the "program" */
+    int numRoots = 0;
+    int a, b, c, d, total, count, largest;
+
+    printf("=== Memory Allocator + Garbage Collector ===\\n");
+    heap = newBlock(0, HEAP_SIZE);     /* one big free block */
+    if (heap == NULL) return 1;
+    printf("\\n--- 1. Initial heap (%d bytes) ---\\n", HEAP_SIZE);
+    printHeap();
+
+    printf("\\n--- 2. Allocate 128, 256, 100, 200 (first fit) ---\\n");
+    a = myMalloc(128);
+    b = myMalloc(256);                 /* succeeds thanks to splitting */
+    c = myMalloc(100);
+    d = myMalloc(200);
+    printHeap();
+
+    printf("\\n--- 3. Root set ---\\n");
+    roots[numRoots++] = a;             /* only a is still referenced */
+    printf("Root set = { id%d }: program still uses id%d\\n", a, a);
+    printf("id%d, id%d: freed by the program itself (step 4)\\n", b, c);
+    printf("id%d: its pointer was lost -> garbage\\n", d);
+
+    printf("\\n--- 4. Explicit myFree(%d), myFree(%d) ---\\n", b, c);
+    myFree(b);
+    myFree(c);                         /* coalesces with freed b */
+    printHeap();
+
+    printf("\\n--- 5. Fragmentation ---\\n");
+    if (myMalloc(BIG_REQUEST) < 0) {
+        freeStats(&total, &count, &largest);
+        printf("  %d B free in total, but largest block is %d B\\n",
+               total, largest);
+    }
+
+    printf("\\n--- 6. gc(): mark and sweep ---\\n");
+    gc(roots, numRoots);
+    printHeap();
+
+    printf("\\n--- 7. Retry myMalloc(%d) after gc ---\\n", BIG_REQUEST);
+    roots[numRoots++] = myMalloc(BIG_REQUEST);
+    printHeap();
+
+    printf("\\n--- 8. Clean up ---\\n");
+    freeHeap();
     return 0;
 }`,
-    output: `[Doubly Linked Memory Allocator & GC]
-Initial Heap: 1024 Bytes Free
-1. my_malloc(128) -> Block split! Allocated 128B, Remaining free: 896B
-2. my_malloc(256) -> Block split! Allocated 256B, Remaining free: 640B
-3. my_free(128B block) -> Marked Free
-4. my_free(256B block) -> Bidirectional Coalescing triggered!
-Combined adjacent free blocks (128B + 256B + 640B) = 1024 Bytes coalesced!
-Fragmentation eliminated.`,
     demoType: "memory_alloc",
     app: "C Runtime malloc/free implementation (dlmalloc/jemalloc), Linux kernel slab allocator, Java Virtual Machine garbage collection heap."
   },
@@ -1467,14 +2896,6 @@ int main() {
     printf("Max KTU Activity Points: %d\\n", maxActivityPoints(A, n, k));
     return 0;
 }`,
-    output: `[KTU Tech Fest Activity Points Maximizer]
-Events Activity Points List:
-[25, 10, 45, 30, 50, 15, 60]
-Maximum events allowed (k): 3
-Constructing Min-Heap of size 3...
-Tracking top 3 events: 60, 50, 45
-Total Maximum Points Earned: 155 Points!
-Optimal greedily chosen event package.`,
     demoType: "tech_fest",
     app: "Top-K streaming data analytics, YouTube trending video tracker, financial portfolio asset allocation."
   },
@@ -1556,18 +2977,14 @@ int main() {
     printf("\\n");
     return 0;
 }`,
-    output: `[Merge K Sorted Lists using Min-Heap]
-List 1: [1, 4, 7]
-List 2: [2, 5, 8]
-List 3: [3, 6, 9]
-Size of Min-Heap = 3
-Repeatedly extracting root and streaming next elements...
-Merged Result: 1 2 3 4 5 6 7 8 9
-Time Complexity: O(N log K) compared to O(N * K) naive merge!`,
     demoType: "merge_k_heap",
     app: "External merge sort in Big Data (Hadoop MapReduce, Apache Spark), distributed database log compaction (Cassandra LSM-trees)."
   }
 ];
+
+// A Windows checkout with autocrlf stores this file with CRLF line endings, which
+// would put \r into the C programs. Normalise so output and hashes are identical everywhere.
+for (const exp of experimentsData) exp.code = exp.code.replace(/\r\n/g, '\n');
 
 const vivaQuestions = [
   { q: "What is a sparse matrix, and why is the 3-tuple format preferred?", a: "A sparse matrix has a majority of zero elements. The 3-tuple representation (row, col, value) stores only non-zero entries, saving significant memory (O(non-zeros) instead of O(r*c)).", tag: "CO1 · K2" },
@@ -1712,7 +3129,30 @@ const quizQuestions = [
 ];
 
 // Let's create the HTML generator
+// The "Terminal Output" panels are not typed by hand. `node scripts/run_programs.js`
+// compiles and runs every program in experimentsData and records what it prints in
+// scripts/program_output.json. Here we attach that output to each experiment and
+// refuse to build if a program changed since it was last run.
+function attachProgramOutputs() {
+  const crypto = require('crypto');
+  const file = path.join(__dirname, 'program_output.json');
+  if (!fs.existsSync(file)) {
+    throw new Error('scripts/program_output.json is missing. Run: node scripts/run_programs.js');
+  }
+  const recorded = JSON.parse(fs.readFileSync(file, 'utf8'));
+  for (const exp of experimentsData) {
+    const rec = recorded.programs[exp.num];
+    const sha = crypto.createHash('sha256').update(exp.code).digest('hex');
+    if (!rec || rec.sha256 !== sha) {
+      throw new Error(`The program for experiment ${exp.num} changed since it was last run. Run: node scripts/run_programs.js`);
+    }
+    exp.output = rec.output;
+  }
+  return recorded;
+}
+
 function buildHtml() {
+  const recorded = attachProgramOutputs();
   return `<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -2607,7 +4047,7 @@ function buildHtml() {
             </div>
 
             <div style="margin-top:14px;">
-              <h5 style="font-size:0.78rem; color:var(--acc-cyan); margin-bottom:4px;">Verified Terminal Output:</h5>
+              <h5 style="font-size:0.78rem; color:var(--acc-cyan); margin-bottom:4px;">Actual Terminal Output (program compiled and run with ${escapeHtml(recorded.compiler)}, <code>${escapeHtml(recorded.flags)}</code>):</h5>
               <pre class="terminal-output">${escapeHtml(exp.output)}</pre>
             </div>
           </div>
@@ -3117,18 +4557,15 @@ function buildHtml() {
           </div>
         \`;
       } else if (num === 10) { // Water Jug
+        // Shortest path found by the BFS in the experiment 10 C program (see its terminal output).
         const jugSteps = [
           { j10: 0, j7: 7, j4: 4, text: "Initial: 10L is empty, 7L & 4L containers are full." },
-          { j10: 7, j7: 0, j4: 4, text: "Pour 7L -> 10L. (10L has 7L, 7L is empty)." },
-          { j10: 7, j7: 4, j4: 0, text: "Pour 4L -> 7L. (7L has 4L, 4L is empty)." },
-          { j10: 3, j7: 4, j4: 4, text: "Pour 10L -> 4L. (10L has 3L, 4L has 4L)." },
-          { j10: 3, j7: 7, j4: 1, text: "Pour 4L -> 7L until full. (4L container left with 1L!)." },
-          { j10: 10, j7: 0, j4: 1, text: "Pour 7L -> 10L. (10L is full)." },
-          { j10: 10, j7: 1, j4: 0, text: "Pour 4L -> 7L. (7L has 1L, 4L is empty)." },
-          { j10: 6, j7: 1, j4: 4, text: "Pour 10L -> 4L. (10L has 6L, 4L is full with 4L)." },
-          { j10: 6, j7: 5, j4: 0, text: "Pour 4L -> 7L. (7L has 5L)." },
-          { j10: 2, j7: 5, j4: 4, text: "Pour 10L -> 4L. (10L has 2L!)." },
-          { j10: 2, j7: 7, j4: 2, text: "GOAL REACHED! Exactly 2L in 4L container!" }
+          { j10: 4, j7: 7, j4: 0, text: "Pour 4L -> 10L. (10L has 4L, 4L is empty)." },
+          { j10: 10, j7: 1, j4: 0, text: "Pour 7L -> 10L. (10L is full, 7L has 1L)." },
+          { j10: 6, j7: 1, j4: 4, text: "Pour 10L -> 4L. (4L is full, 10L has 6L)." },
+          { j10: 6, j7: 5, j4: 0, text: "Pour 4L -> 7L. (7L has 5L, 4L is empty)." },
+          { j10: 2, j7: 5, j4: 4, text: "Pour 10L -> 4L. (4L is full, 10L has 2L)." },
+          { j10: 2, j7: 7, j4: 2, text: "Pour 4L -> 7L. (7L is full, 4L has 2L). GOAL: exactly 2L in the 4L container!" }
         ];
         const s = jugSteps[stepIndex % jugSteps.length];
         ticker.innerText = "Step " + (stepIndex % jugSteps.length + 1) + ": " + s.text;
@@ -3262,14 +4699,21 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-const finalHtml = buildHtml();
-const targetPath = path.resolve(__dirname, '..', 'PCCSL307_Data_Structures_Lab_Portal.html');
-const indexPath = path.resolve(__dirname, '..', 'index.html');
+module.exports = { experimentsData, vivaQuestions, quizQuestions };
 
-fs.writeFileSync(targetPath, finalHtml, 'utf-8');
-console.log(`Generated: ${targetPath} (${finalHtml.length} bytes)`);
+// Build only when run directly (`node scripts/generate_portal.js`), so that
+// scripts/run_programs.js and the tests can load the data without side effects.
+if (require.main === module) {
+  console.log('Generating complete single-file Data Structures Lab portal...');
+  const finalHtml = buildHtml();
+  const targetPath = path.resolve(__dirname, '..', 'PCCSL307_Data_Structures_Lab_Portal.html');
+  const indexPath = path.resolve(__dirname, '..', 'index.html');
 
-fs.writeFileSync(indexPath, finalHtml, 'utf-8');
-console.log(`Mirrored to: ${indexPath}`);
+  fs.writeFileSync(targetPath, finalHtml, 'utf-8');
+  console.log(`Generated: PCCSL307_Data_Structures_Lab_Portal.html (${finalHtml.length} bytes)`);
 
-console.log('Build completed successfully!');
+  fs.writeFileSync(indexPath, finalHtml, 'utf-8');
+  console.log('Mirrored to: index.html');
+
+  console.log('Build completed successfully!');
+}

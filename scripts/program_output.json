@@ -1,0 +1,96 @@
+{
+  "compiler": "gcc (MinGW-W64 x86_64-ucrt-posix-seh, built by Brecht Sanders, r2) 16.2.0",
+  "flags": "-Wall -Wextra -std=c11 -pedantic",
+  "programs": {
+    "1": {
+      "sha256": "34f0884b8448aef36a2bd154ec667ca611453bc90b6f32f4db8e38f1e7aeb1cf",
+      "exitCode": 0,
+      "output": "Resultant Polynomial: 6x^3 + 3x^2 + 4x^1 + 6x^0"
+    },
+    "2": {
+      "sha256": "50fd7c85181635c6e7226ec41230167081d46b6cc9ff3d040fbacdde95ec1b6b",
+      "exitCode": 0,
+      "output": "Experiment 2: Sparse Matrix Transpose and Addition\n\nMatrix A in 3-tuple form:\n  Row Col Val\n    4   4   3   <- rows, cols, non-zeros\n    0   1  10\n    1   3  20\n    3   0  30\nMatrix A as a dense matrix:\n     0   10    0    0\n     0    0    0   20\n     0    0    0    0\n    30    0    0    0\n\nMatrix B in 3-tuple form:\n  Row Col Val\n    4   4   3   <- rows, cols, non-zeros\n    0   1   5\n    2   2  40\n    3   0 -30\nMatrix B as a dense matrix:\n     0    5    0    0\n     0    0    0    0\n     0    0   40    0\n   -30    0    0    0\n\nA + B: both are 4 x 4, merge in row-major order\n  (0,1) in both: A 10, B 5 -> sum 15\n  (1,3) only in A: copy 20\n  (2,2) only in B: copy 40\n  (3,0) in both: A 30, B -30 -> sum 0, dropped\nA + B in 3-tuple form:\n  Row Col Val\n    4   4   3   <- rows, cols, non-zeros\n    0   1  15\n    1   3  20\n    2   2  40\nA + B as a dense matrix:\n     0   15    0    0\n     0    0    0   20\n     0    0   40    0\n     0    0    0    0\n\nTranspose of A: fast transpose\n  Column   :   0   1   2   3\n  Count    :   1   1   0   1\n  Start pos:   1   2   3   3\n  A(0,1) = 10 -> slot 2 as (1,0)\n  A(1,3) = 20 -> slot 3 as (3,1)\n  A(3,0) = 30 -> slot 1 as (0,3)\nTranspose of A in 3-tuple form:\n  Row Col Val\n    4   4   3   <- rows, cols, non-zeros\n    0   3  30\n    1   0  10\n    3   1  20\nTranspose of A as a dense matrix:\n     0    0    0   30\n    10    0    0    0\n     0    0    0    0\n     0   20    0    0"
+    },
+    "3": {
+      "sha256": "fc16140b711b13064a039e5ab97b45140344f6c64bfeba44da512dad2a231ebb",
+      "exitCode": 0,
+      "output": "Experiment 3: Infix -> Postfix -> Evaluate (stacks)\n\n[1] Infix  : ((5+3)*2)-4   = ((A+B)*C)-D, A=5 B=3 C=2 D=4\n    Symbol Op stack  Postfix\n    (      (\n    (      ((\n    5      ((        5\n    +      ((+       5\n    3      ((+       53\n    )      (         53+\n    *      (*        53+\n    2      (*        53+2\n    )                53+2*\n    -      -         53+2*\n    4      -         53+2*4\n    end              53+2*4-\n    Postfix: 53+2*4-\n    Token  Action          Operand stack\n    5      push 5          5\n    3      push 3          5 3\n    +      5 + 3 = 8       8\n    2      push 2          8 2\n    *      8 * 2 = 16      16\n    4      push 4          16 4\n    -      16 - 4 = 12     12\n    Result : 12\n\n[2] Infix  : (1+1)^3^2   = 2^(3^2), ^ is right-assoc\n    Symbol Op stack  Postfix\n    (      (\n    1      (         1\n    +      (+        1\n    1      (+        11\n    )                11+\n    ^      ^         11+\n    3      ^         11+3\n    ^      ^^        11+3\n    2      ^^        11+32\n    end              11+32^^\n    Postfix: 11+32^^\n    Token  Action          Operand stack\n    1      push 1          1\n    1      push 1          1 1\n    +      1 + 1 = 2       2\n    3      push 3          2 3\n    2      push 2          2 3 2\n    ^      3 ^ 2 = 9       2 9\n    ^      2 ^ 9 = 512     512\n    Result : 512\n\n[3] Infix  : 8/(3-3)   = 8/0, division by zero\n    Postfix: 833-/\n    Token  Action          Operand stack\n    8      push 8          8\n    3      push 3          8 3\n    3      push 3          8 3 3\n    -      3 - 3 = 0       8 0\n    /      8 / 0 -> Error: division by zero\n    Result : not defined (evaluation stopped)"
+    },
+    "4": {
+      "sha256": "0f6e2c1471a9221ac320992e6a0838c8e6f08dfbbd5ed4a638e5f418ec9d72e8",
+      "exitCode": 0,
+      "output": "Experiment 04: Queue, DEQUEUE and Circular Queue\n\n=== 1. Linear Queue, SIZE = 4 ===\nOperation       Result    front rear  Contents\nEnqueue     10  ok            0    0  10\nEnqueue     20  ok            0    1  10 20\nEnqueue     30  ok            0    2  10 20 30\nEnqueue     40  ok            0    3  10 20 30 40\nDequeue         got 10        1    3  20 30 40\nDequeue         got 20        2    3  30 40\nEnqueue     50  OVERFLOW      2    3  30 40\n    array: [0]=- [1]=- [2]=30 [3]=40\nLimitation: [0] and [1] are free, but rear = SIZE-1,\nso the queue reports FULL. A circular queue fixes this.\n\n=== 2. DEQUEUE on a circular array, SIZE = 5 ===\nOperation       Result    front rear  Contents\ninsertRear  10  ok            0    0  10\ninsertRear  20  ok            0    1  10 20\ninsertFront 5   ok            4    1  5 10 20\ninsertFront 1   ok            3    1  1 5 10 20\ninsertRear  30  ok            3    2  1 5 10 20 30\n    array: [0]=10 [1]=20 [2]=30 [3]=1 [4]=5\ninsertFront 0   OVERFLOW      3    2  1 5 10 20 30\ndeleteFront     got 1         4    2  5 10 20 30\ndeleteRear      got 30        4    1  5 10 20\ndeleteRear      got 20        4    0  5 10\ndeleteFront     got 5         0    0  10\ndeleteRear      got 10       -1   -1  (empty)\ndeleteFront     UNDERFLOW    -1   -1  (empty)\n\n=== 3. Circular Queue, SIZE = 5 ===\nOperation       Result    front rear  Contents\nEnqueue     10  ok            0    0  10\nEnqueue     20  ok            0    1  10 20\nEnqueue     30  ok            0    2  10 20 30\nDequeue         got 10        1    2  20 30\nEnqueue     40  ok            1    3  20 30 40\nEnqueue     50  ok            1    4  20 30 40 50\nEnqueue     60  ok            1    0  20 30 40 50 60\n    array: [0]=60 [1]=20 [2]=30 [3]=40 [4]=50\n    rear wrapped 4 -> 0 into the slot freed by 10\nEnqueue     70  OVERFLOW      1    0  20 30 40 50 60\nDequeue         got 20        2    0  30 40 50 60\nDequeue         got 30        3    0  40 50 60\nDequeue         got 40        4    0  50 60\nDequeue         got 50        0    0  60\n    front wrapped 4 -> 0 too: no slot is ever wasted"
+    },
+    "5": {
+      "sha256": "04d998669ff2c7c367ebfa57f7233785beb3ff6a0a5c95caf40fc3c6eee4a9db",
+      "exitCode": 0,
+      "output": "Visited -> google.com\nVisited -> github.com\nVisited -> stackoverflow.com\nBack to <- github.com\nBack to <- google.com\nForward to -> github.com\nVisited -> ktu.edu.in\nForward disabled (latest page)"
+    },
+    "6": {
+      "sha256": "b0e736524568265e47db4e1e960ddfbdf956a9952f3317e47afd08b6fc39fef8",
+      "exitCode": 0,
+      "output": "Experiment 06: Polynomial Addition and Multiplication\n\nP1 = 3x^2 + 5x^0\nP2 = 2x^1 + 4x^0\n\n--- Addition: merge the two sorted lists ---\n  x^2 only in 1st: copy 3x^2\n  x^1 only in 2nd: copy 2x^1\n  x^0 in both: 5 + 4 = 9 -> 9x^0\nP1 + P2 = 3x^2 + 2x^1 + 9x^0\n\n--- Multiplication: every term times every term ---\n  term * term = product  -> result so far\n  (3x^2) * (2x^1) = 6x^3  -> 6x^3\n  (3x^2) * (4x^0) = 12x^2  -> 6x^3 + 12x^2\n  (5x^0) * (2x^1) = 10x^1  -> 6x^3 + 12x^2 + 10x^1\n  (5x^0) * (4x^0) = 20x^0  -> 6x^3 + 12x^2 + 10x^1 + 20x^0\nP1 * P2 = 6x^3 + 12x^2 + 10x^1 + 20x^0\n\n--- Check: negative terms and cancellation ---\nP3 = 2x^1 - 4x^0\n  x^1 in both: 2 + 2 = 4 -> 4x^1\n  x^0 in both: 4 + -4 = 0 -> term dropped\nP2 + P3 = 4x^1\n  (2x^1) * (2x^1) = 4x^2  -> 4x^2\n  (2x^1) * (-4x^0) = -8x^1  -> 4x^2 - 8x^1\n  (4x^0) * (2x^1) = 8x^1  -> 4x^2\n  (4x^0) * (-4x^0) = -16x^0  -> 4x^2 - 16x^0\nP2 * P3 = 4x^2 - 16x^0\n  (-8x^1 + 8x^1 = 0, so insertTerm removed the x^1 node)\nP2 * (empty list) = 0\n\nAll lists freed."
+    },
+    "7": {
+      "sha256": "fae41927d4caf0ab79a437adef1464c21bf6f6e04544eab607be72332bb5692a",
+      "exitCode": 0,
+      "output": "Experiment 7: Expression Tree -> Prefix and Postfix\nPrecedence: ^ (right-assoc) > * / > + - (left-assoc)\nbuild = pop an operator, join the top two subtrees\nExpression 1 is the old postfix sample ab+c* as infix\n\n=== Expression 1 (infix): (a+b)*c ===\n  build '+' : (a+b)\n  build '*' : ((a+b)*c)\nTree (root at left, right child above):\n      c\n  *\n          b\n      +\n          a\nPrefix  (preorder) : * + a b c\nPostfix (postorder): a b + c *\nInfix   (inorder)  : ((a+b)*c)\n\n=== Expression 2 (infix): (a+b)*(c-d)/e ===\n  build '+' : (a+b)\n  build '-' : (c-d)\n  build '*' : ((a+b)*(c-d))\n  build '/' : (((a+b)*(c-d))/e)\nTree (root at left, right child above):\n      e\n  /\n              d\n          -\n              c\n      *\n              b\n          +\n              a\nPrefix  (preorder) : / * + a b - c d e\nPostfix (postorder): a b + c d - * e /\nInfix   (inorder)  : (((a+b)*(c-d))/e)\n\n=== Expression 3 (infix): 8-3-2^3^2 ===\n  build '-' : (8-3)\n  build '^' : (3^2)\n  build '^' : (2^(3^2))\n  build '-' : ((8-3)-(2^(3^2)))\nTree (root at left, right child above):\n              2\n          ^\n              3\n      ^\n          2\n  -\n          3\n      -\n          8\nPrefix  (preorder) : - - 8 3 ^ 2 ^ 3 2\nPostfix (postorder): 8 3 - 2 3 2 ^ ^ -\nInfix   (inorder)  : ((8-3)-(2^(3^2)))\n\nAll trees freed."
+    },
+    "8": {
+      "sha256": "065f1d303c6d83630d7e5e731f5660ab5f86f5e68be0dceaf4bccd54a7028ee7",
+      "exitCode": 0,
+      "output": "Found: Queue => FIFO data structure"
+    },
+    "9": {
+      "sha256": "d920367036d597c0cb09e6364986d468a6e6d787cd5cc56d814433e19c152592",
+      "exitCode": 0,
+      "output": "Shortest Distance Matrix:\n 2  2  1  0 \n 1 -1  2  1 \n 0  1  2  2 \n 1  2 -1  3 "
+    },
+    "10": {
+      "sha256": "ef134c35a6f0e6313c4ee159dafc00935ff15b67a88aff5e93381fbed3e1cae0",
+      "exitCode": 0,
+      "output": "Experiment 10: Water Jug (10L, 7L, 4L) as a Graph, BFS\nVertices: states (a, b, c) = litres in 10L, 7L, 4L\nEdges   : 6 pours i -> j, moving min(water in i, space in j)\nStart (0, 7, 4)   Goal: b == 2 or c == 2\n\nBFS order of states taken from the queue:\nDepth  0: (0,7,4)\nDepth  1: (7,0,4) (4,7,0)\nDepth  2: (10,0,1) (7,4,0) (10,1,0) (4,3,4)\nDepth  3: (3,7,1) (3,4,4) (6,1,4) (8,3,0)\nDepth  4: (6,5,0) (8,0,3)\nDepth  5: (2,5,4) (1,7,3)\nDepth  6: (2,7,2)\n\nGoal found after visiting 16 states.\n\nShortest sequence of pours:\nStart : state (0, 7, 4)\nStep 1: Pour 4L -> 10L   state (4, 7, 0)\nStep 2: Pour 7L -> 10L   state (10, 1, 0)\nStep 3: Pour 10L -> 4L   state (6, 1, 4)\nStep 4: Pour 4L -> 7L    state (6, 5, 0)\nStep 5: Pour 10L -> 4L   state (2, 5, 4)\nStep 6: Pour 4L -> 7L    state (2, 7, 2)\nGOAL: exactly 2L in the 4L container!\nTotal moves: 6\nBFS explores level by level, so no shorter sequence exists."
+    },
+    "11": {
+      "sha256": "e156219545577843444866fe929e69acbe0bd2bb0e90be0648a7475eea32018e",
+      "exitCode": 0,
+      "output": "Original: Data structures in C are easy and C is fast.\nReplaced: Data structures in Python are easy and Python is fast."
+    },
+    "12": {
+      "sha256": "65fe37a197b1566a77f22cecd181fe098cbc5fd24e96830d311073a6e81211b5",
+      "exitCode": 0,
+      "output": "Item 72 found at index 10 in 2 comparison steps!"
+    },
+    "13": {
+      "sha256": "3f0a1687b3fb91922250b3a3c41f711e05110d1346fea83bea14c6410ed2290d",
+      "exitCode": 0,
+      "output": "Experiment 13: Sorting Benchmark\nBubble, Insertion, Radix, Quick and Merge sort\n=======================================================\nHow steps are counted (same rules for every sort):\n  comparison  = one test between two keys, e.g. a[j] > a[j+1]\n  move        = one element assignment: swap = 3 moves,\n                shift = 1, copy to/from a temp array = 1\n  total steps = comparisons + moves\n  radix       = n-1 comparisons (find max) + 2n moves per pass\n\nCase 1: sample data (n = 7)\nInput : 64 34 25 12 22 11 90\nSorted: 11 12 22 25 34 64 90\nAll five results match\nAlgorithm              Comparisons   Moves  Total steps\n-------------------------------------------------------\nBubble (early exit)             21      42           63\nInsertion (shifting)            16      26           42\nRadix (LSD, base 10)             6      28           34\nQuick (Lomuto)                  19      48           67\nMerge (top-down)                13      40           53\n\nCase 2: already sorted (n = 7)\nInput : 11 12 22 25 34 64 90\nSorted: 11 12 22 25 34 64 90\nAll five results match\nAlgorithm              Comparisons   Moves  Total steps\n-------------------------------------------------------\nBubble (early exit)              6       0            6\nInsertion (shifting)             6      12           18\nRadix (LSD, base 10)             6      28           34\nQuick (Lomuto)                  21      81          102\nMerge (top-down)                11      40           51\n\nCase 3: reverse sorted (n = 7)\nInput : 90 64 34 25 22 12 11\nSorted: 11 12 22 25 34 64 90\nAll five results match\nAlgorithm              Comparisons   Moves  Total steps\n-------------------------------------------------------\nBubble (early exit)             21      63           84\nInsertion (shifting)            21      33           54\nRadix (LSD, base 10)             6      28           34\nQuick (Lomuto)                  21      45           66\nMerge (top-down)                 9      40           49\n\nObservations:\n- Bubble and insertion: fewest steps on sorted input, most\n  on reverse input (every pair is out of order).\n- Quick sort with a last-element pivot is worst on sorted\n  input: each partition removes only the pivot.\n- Radix and merge moves do not depend on the input order."
+    },
+    "14": {
+      "sha256": "c5e2c161e9866db1bb625bd59815e2054b668dea3cd81153d524065e0fe459ad",
+      "exitCode": 0,
+      "output": "Service Sequence:\nServing Token 103: Mary (Diff. Abled) [Prio 4]\nServing Token 104: Joseph (Senior) [Prio 3]\nServing Token 102: Major Roy (Defence) [Prio 2]\nServing Token 101: Rahul (Normal) [Prio 1]"
+    },
+    "15": {
+      "sha256": "9a83d07f66181b0f909192a0f2e331e8fa16739d7def3de2921bb7bfc1ef0a7f",
+      "exitCode": 0,
+      "output": "'algoritm' is MISSPELLED. Did you mean: 'algorithm'?"
+    },
+    "16": {
+      "sha256": "9ab594405e0f80fa92811046c0b9337d239d8a0ff7db2e240426a4d9b56a2acb",
+      "exitCode": 0,
+      "output": "=== Memory Allocator + Garbage Collector ===\n\n--- 1. Initial heap (1024 bytes) ---\n  [   0-1023] 1024 B  FREE\n  Used 0 B, Free 1024 B, free blocks 1, largest 1024 B\n\n--- 2. Allocate 128, 256, 100, 200 (first fit) ---\nmyMalloc(128): id1 at [0-127], split leaves 896 B free\nmyMalloc(256): id2 at [128-383], split leaves 640 B free\nmyMalloc(100): id3 at [384-483], split leaves 540 B free\nmyMalloc(200): id4 at [484-683], split leaves 340 B free\n  [   0- 127]  128 B  USED  id=1\n  [ 128- 383]  256 B  USED  id=2\n  [ 384- 483]  100 B  USED  id=3\n  [ 484- 683]  200 B  USED  id=4\n  [ 684-1023]  340 B  FREE\n  Used 684 B, Free 340 B, free blocks 1, largest 340 B\n\n--- 3. Root set ---\nRoot set = { id1 }: program still uses id1\nid2, id3: freed by the program itself (step 4)\nid4: its pointer was lost -> garbage\n\n--- 4. Explicit myFree(2), myFree(3) ---\nmyFree(2): release [128-383] 256 B\n    no free neighbour -> FREE [128-383] 256 B\nmyFree(3): release [384-483] 100 B\n    merged with prev -> FREE [128-483] 356 B\n  [   0- 127]  128 B  USED  id=1\n  [ 128- 483]  356 B  FREE\n  [ 484- 683]  200 B  USED  id=4\n  [ 684-1023]  340 B  FREE\n  Used 328 B, Free 696 B, free blocks 2, largest 356 B\n\n--- 5. Fragmentation ---\nmyMalloc(500): Out of memory (no free block >= 500 B)\n  696 B free in total, but largest block is 356 B\n\n--- 6. gc(): mark and sweep ---\nmark : id1 is in the root set -> marked\nsweep: id4 unmarked -> reclaim 200 B\n    merged with prev + next -> FREE [128-1023] 896 B\ngc(): 200 bytes reclaimed\n  [   0- 127]  128 B  USED  id=1\n  [ 128-1023]  896 B  FREE\n  Used 128 B, Free 896 B, free blocks 1, largest 896 B\n\n--- 7. Retry myMalloc(500) after gc ---\nmyMalloc(500): id5 at [128-627], split leaves 396 B free\n  [   0- 127]  128 B  USED  id=1\n  [ 128- 627]  500 B  USED  id=5\n  [ 628-1023]  396 B  FREE\n  Used 628 B, Free 396 B, free blocks 1, largest 396 B\n\n--- 8. Clean up ---\nFreed 3 block descriptor(s). Done."
+    },
+    "17": {
+      "sha256": "e68dbeb0c5bf12404c05fac45e269b83ed0b9d1d57e797bbb1d69ad1b19f50c6",
+      "exitCode": 0,
+      "output": "Max KTU Activity Points: 155"
+    },
+    "18": {
+      "sha256": "288e1c0dc9cc22c254d6b7297307f9ee7719489ad7150660164e2ae041200b22",
+      "exitCode": 0,
+      "output": "Merged Sorted List: 1 2 3 4 5 6 7 8 9 "
+    }
+  }
+}
