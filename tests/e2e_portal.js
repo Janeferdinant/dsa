@@ -20,8 +20,8 @@ const shots = process.argv[4];
     check(await page.locator('article.experiment-card').count() >= 18, `${tag} experiment cards render`);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     check(overflow <= 0, `${tag} no horizontal overflow (${overflow}px)`);
-    check(await page.locator('.viva-item').count() === 36, `${tag} 36 viva items in the DOM`);
-    check(await page.locator('.quiz-card').count() === 15, `${tag} 15 quiz cards in the DOM`);
+    check(await page.locator('.viva-item').count() === 37, `${tag} 37 viva items in the DOM`);
+    check(await page.locator('.quiz-card').count() === 16, `${tag} 16 quiz cards in the DOM`);
     check(await page.locator('pre.terminal-output').count() === 18, `${tag} 18 terminal output panels`);
 
     // Open experiment 10, show its code and actual output, and play the demo.
@@ -44,7 +44,7 @@ const shots = process.argv[4];
     check(await page.locator('#viva-item-0.revealed').count() === 1, `${tag} viva answer reveals`);
     await page.evaluate(() => closeDrawer());
     await page.evaluate(() => openDrawer('quiz'));
-    check(await page.locator('#drawer-body .quiz-card').count() === 15, `${tag} quiz drawer lists 15 questions`);
+    check(await page.locator('#drawer-body .quiz-card').count() === 16, `${tag} quiz drawer lists 16 questions`);
     await page.locator('#drawer-body .quiz-opt').first().click();
     await page.screenshot({ path: `${shots}/dsa-quiz-${w}.png` });
     check(problems.length === 0, `${tag} no console or page errors ${JSON.stringify(problems)}`);
