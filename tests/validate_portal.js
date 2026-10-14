@@ -10,7 +10,8 @@ if (!fs.existsSync(targetPath)) {
   process.exit(1);
 }
 
-const html = fs.readFileSync(targetPath, 'utf-8');
+// Normalise line endings: a Windows checkout with autocrlf stores the file with CRLF.
+const html = fs.readFileSync(targetPath, 'utf-8').replace(/\r\n/g, '\n');
 let passed = 0;
 let failed = 0;
 
