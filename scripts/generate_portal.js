@@ -1005,6 +1005,18 @@ struct PageNode *current = NULL;
 
 void visit(const char *url) {
     struct PageNode *newNode = (struct PageNode*)malloc(sizeof(struct PageNode));
+    if (!newNode) {
+        fprintf(stderr, "Out of memory\\n");
+        return;
+    }
+    if (current != NULL) {                 // prune the forward history
+        struct PageNode *stale = current->next;
+        while (stale) {
+            struct PageNode *next = stale->next;
+            free(stale);
+            stale = next;
+        }
+    }
     strcpy(newNode->url, url);
     newNode->next = NULL;
     newNode->prev = current;
@@ -1036,6 +1048,13 @@ int main() {
     forward();
     visit("ktu.edu.in"); // Forward history pruned!
     forward(); // Disabled!
+
+    while (current && current->prev) current = current->prev;   // back to the first page
+    while (current) {
+        struct PageNode *next = current->next;
+        free(current);
+        current = next;
+    }
     return 0;
 }`,
     demoType: "browser_nav",
@@ -1609,6 +1628,10 @@ struct BSTNode {
 struct BSTNode* insert(struct BSTNode *root, const char *w, const char *m) {
     if (!root) {
         struct BSTNode *n = (struct BSTNode*)malloc(sizeof(struct BSTNode));
+        if (!n) {
+            fprintf(stderr, "Out of memory\\n");
+            return NULL;
+        }
         strcpy(n->word, w); strcpy(n->meaning, m);
         n->left = n->right = NULL;
         return n;
@@ -1617,6 +1640,13 @@ struct BSTNode* insert(struct BSTNode *root, const char *w, const char *m) {
     if (cmp < 0) root->left = insert(root->left, w, m);
     else if (cmp > 0) root->right = insert(root->right, w, m);
     return root;
+}
+
+void freeTree(struct BSTNode *root) {
+    if (!root) return;
+    freeTree(root->left);
+    freeTree(root->right);
+    free(root);
 }
 
 struct BSTNode* search(struct BSTNode *root, const char *w) {
@@ -1633,6 +1663,7 @@ int main() {
 
     struct BSTNode *res = search(root, "Queue");
     if (res) printf("Found: %s => %s\\n", res->word, res->meaning);
+    freeTree(root);
     return 0;
 }`,
     demoType: "bst_dict",
@@ -2436,10 +2467,10 @@ void enqueue(int id, const char *name, int prio) {
 }
 
 int main() {
-    enqueue(101, "Rahul (Normal)", 1);
-    enqueue(102, "Major Roy (Defence)", 2);
-    enqueue(103, "Mary (Diff. Abled)", 4);
-    enqueue(104, "Joseph (Senior)", 3);
+    enqueue(101, "Customer A (Normal)", 1);
+    enqueue(102, "Customer B (Defence)", 2);
+    enqueue(103, "Customer C (Diff. Abled)", 4);
+    enqueue(104, "Customer D (Senior)", 3);
 
     printf("Service Sequence:\\n");
     for (int i = 0; i < count; i++) {
