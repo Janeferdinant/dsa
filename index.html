@@ -2264,6 +2264,18 @@ struct PageNode *current = NULL;
 
 void visit(const char *url) {
     struct PageNode *newNode = (struct PageNode*)malloc(sizeof(struct PageNode));
+    if (!newNode) {
+        fprintf(stderr, &quot;Out of memory\n&quot;);
+        return;
+    }
+    if (current != NULL) {                 // prune the forward history
+        struct PageNode *stale = current-&gt;next;
+        while (stale) {
+            struct PageNode *next = stale-&gt;next;
+            free(stale);
+            stale = next;
+        }
+    }
     strcpy(newNode-&gt;url, url);
     newNode-&gt;next = NULL;
     newNode-&gt;prev = current;
@@ -2295,6 +2307,13 @@ int main() {
     forward();
     visit(&quot;ktu.edu.in&quot;); // Forward history pruned!
     forward(); // Disabled!
+
+    while (current &amp;&amp; current-&gt;prev) current = current-&gt;prev;   // back to the first page
+    while (current) {
+        struct PageNode *next = current-&gt;next;
+        free(current);
+        current = next;
+    }
     return 0;
 }</code></pre>
             </div>
@@ -3135,6 +3154,10 @@ struct BSTNode {
 struct BSTNode* insert(struct BSTNode *root, const char *w, const char *m) {
     if (!root) {
         struct BSTNode *n = (struct BSTNode*)malloc(sizeof(struct BSTNode));
+        if (!n) {
+            fprintf(stderr, &quot;Out of memory\n&quot;);
+            return NULL;
+        }
         strcpy(n-&gt;word, w); strcpy(n-&gt;meaning, m);
         n-&gt;left = n-&gt;right = NULL;
         return n;
@@ -3143,6 +3166,13 @@ struct BSTNode* insert(struct BSTNode *root, const char *w, const char *m) {
     if (cmp &lt; 0) root-&gt;left = insert(root-&gt;left, w, m);
     else if (cmp &gt; 0) root-&gt;right = insert(root-&gt;right, w, m);
     return root;
+}
+
+void freeTree(struct BSTNode *root) {
+    if (!root) return;
+    freeTree(root-&gt;left);
+    freeTree(root-&gt;right);
+    free(root);
 }
 
 struct BSTNode* search(struct BSTNode *root, const char *w) {
@@ -3159,6 +3189,7 @@ int main() {
 
     struct BSTNode *res = search(root, &quot;Queue&quot;);
     if (res) printf(&quot;Found: %s =&gt; %s\n&quot;, res-&gt;word, res-&gt;meaning);
+    freeTree(root);
     return 0;
 }</code></pre>
             </div>
@@ -4396,10 +4427,10 @@ void enqueue(int id, const char *name, int prio) {
 }
 
 int main() {
-    enqueue(101, &quot;Rahul (Normal)&quot;, 1);
-    enqueue(102, &quot;Major Roy (Defence)&quot;, 2);
-    enqueue(103, &quot;Mary (Diff. Abled)&quot;, 4);
-    enqueue(104, &quot;Joseph (Senior)&quot;, 3);
+    enqueue(101, &quot;Customer A (Normal)&quot;, 1);
+    enqueue(102, &quot;Customer B (Defence)&quot;, 2);
+    enqueue(103, &quot;Customer C (Diff. Abled)&quot;, 4);
+    enqueue(104, &quot;Customer D (Senior)&quot;, 3);
 
     printf(&quot;Service Sequence:\n&quot;);
     for (int i = 0; i &lt; count; i++) {
@@ -4412,10 +4443,10 @@ int main() {
             <div style="margin-top:14px;">
               <h5 style="font-size:0.78rem; color:var(--acc-cyan); margin-bottom:4px;">Actual Terminal Output (program compiled and run with gcc (MinGW-W64 x86_64-ucrt-posix-seh, built by Brecht Sanders, r2) 16.2.0, <code>-Wall -Wextra -std=c11 -pedantic</code>):</h5>
               <pre class="terminal-output">Service Sequence:
-Serving Token 103: Mary (Diff. Abled) [Prio 4]
-Serving Token 104: Joseph (Senior) [Prio 3]
-Serving Token 102: Major Roy (Defence) [Prio 2]
-Serving Token 101: Rahul (Normal) [Prio 1]</pre>
+Serving Token 103: Customer C (Diff. Abled) [Prio 4]
+Serving Token 104: Customer D (Senior) [Prio 3]
+Serving Token 102: Customer B (Defence) [Prio 2]
+Serving Token 101: Customer A (Normal) [Prio 1]</pre>
             </div>
           </div>
 

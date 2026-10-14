@@ -8,7 +8,7 @@ A single-file, mobile-first study portal for the KTU B.Tech CSE S3 **PCCSL307 Da
 
 ## Demo
 
-There is no public deployment yet. The portal is one self-contained file, so you can open `index.html` directly in a browser or serve the folder (see Getting started). GitHub Pages can serve this repo as-is (`index.html` is at the root and makes no external requests), but enabling it needs the owner's approval.
+Live: https://janeferdinant.github.io/dsa/ (GitHub Pages, served from `main`). The portal is one self-contained file at `index.html` and makes no external requests, so you can also open it directly in a browser or serve the folder (see Getting started).
 
 ![Experiment 10 on a phone](docs/img/dsa-exp10-phone.jpg)
 
@@ -63,12 +63,12 @@ This is a teaching tool with no performance metrics. Verification (run log: [`do
 
 | Check | Value | Status | How measured | Date |
 |---|---|---|---|---|
-| C programs compile warning-free | 18 of 18 | Verified (re-run 2026-10-13) | `gcc -Wall -Wextra -std=c11 -pedantic`, GCC 16.2.0 | 2026-10-13 |
-| C programs run, exit code 0, deterministic | 18 of 18 | Verified (re-run 2026-10-13) | `node scripts/run_programs.js` | 2026-10-13 |
-| Static analysis (`-fanalyzer`) | 16 of 18 clean (exp05 and exp08: no NULL check after malloc) | Verified (re-run 2026-10-13) | `gcc ... -fanalyzer -c` | 2026-10-13 |
-| Portal tests | 45 passed, 0 failed | Verified (re-run 2026-10-13) | `node tests/validate_portal.js` | 2026-10-13 |
-| Browser checks at 390 px and 1280 px | all passed, no console errors, no overflow, no external requests | Verified (re-run 2026-10-13) | Playwright 1.59.1, Chromium | 2026-10-13 |
-| Viva questions / quiz questions | 36 / 15 | Verified (re-run 2026-10-13) | counted in the generated HTML | 2026-10-13 |
+| C programs compile warning-free | 18 of 18 | Verified (re-run 2026-10-14) | `gcc -Wall -Wextra -std=c11 -pedantic`, GCC 16.2.0 | 2026-10-14 |
+| C programs run, exit code 0, deterministic | 18 of 18 | Verified (re-run 2026-10-14) | `node scripts/run_programs.js` | 2026-10-14 |
+| Static analysis (`-fanalyzer`) | 18 of 18 clean | Verified (re-run 2026-10-14, after adding NULL checks and cleanup to exp05 and exp08) | `gcc -Wall -Wextra -std=c11 -pedantic -fanalyzer -c`, GCC 16.2.0 | 2026-10-14 |
+| Portal tests | 45 passed, 0 failed | Verified (re-run 2026-10-14) | `node tests/validate_portal.js` | 2026-10-14 |
+| Browser checks at 390 px and 1280 px | all passed, no console errors, no overflow, no external requests | Verified (re-run 2026-10-14) | Playwright 1.59.1, Chromium | 2026-10-14 |
+| Viva questions / quiz questions | 36 / 15 | Verified (re-run 2026-10-14) | counted in the generated HTML | 2026-10-14 |
 
 An earlier README said 37 viva and 16 quiz questions. That came from the test counting the JavaScript row templates as items; the real counts are 36 and 15.
 
@@ -122,15 +122,13 @@ Each experiment card lists its own: for example compilers (expression conversion
 
 - Programs read no input; they run on fixed sample data so the output is reproducible.
 - The animated demos are scripted walkthroughs of sample data, not a run of the C code. Only experiments 1, 4, 10 and 12 have a custom visualiser; the others use a generic one.
-- Programs 5 and 8 do not check malloc results and do not free their nodes (clear, but not best practice).
+- Sample data is fictional: experiment 14 uses generic labels (Customer A to D) rather than names.
 - The theory page overflows by about 62 px on a 390 px screen.
 - `syllabus_extracted.txt` only holds page markers, not extracted text.
 
 ## Future scope
 
-- Add malloc checks and cleanup to experiments 5 and 8.
 - Custom visualisers for the remaining experiments.
-- Publish on GitHub Pages (needs the owner's approval).
 
 ## Credits & citation
 
